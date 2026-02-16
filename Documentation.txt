@@ -1,0 +1,582 @@
+Fractured Echoes (Unity) — Full Game Design & Technical Roadmap
+
+Psychological Horror Puzzle → First Person Experience → Dynamic Environment → Atmosphere-Driven Systems → Thesis Implementation
+
+1) Vision
+
+Develop a first-person psychological horror puzzle game in Unity where:
+
+Space gradually changes
+
+Environment reacts to player actions
+
+Puzzles drive narrative progression
+
+Atmosphere is built through lighting, audio, and scripted events
+
+Player experiences tension through uncertainty, transformation, and perception shifts
+
+Core pillars:
+
+Psychological tension over jumpscares
+
+Environmental storytelling
+
+Controlled pacing
+
+Reactive world design
+
+Gradual mechanical evolution per location
+
+2) Core Game Identity
+
+Genre:
+Psychological Horror + Puzzle + Exploration
+
+Perspective:
+First Person
+
+Structure:
+Linear progression through interconnected enclosed locations
+
+Experience Goal:
+Unease, disorientation, curiosity, narrative mystery
+
+3) Development Stages
+Stage 0 — Pre-Production
+
+Define narrative arc
+
+Define emotional pacing
+
+Design 5–7 core locations
+
+Define puzzle types
+
+Create mechanic progression map
+
+Create visual identity board
+
+Deliverables:
+
+Narrative outline
+
+Level flow diagram
+
+Puzzle dependency graph
+
+Stage 1 — Core Systems Implementation
+
+Build foundation systems:
+
+First Person Controller
+
+Interaction System
+
+Inventory System
+
+Object Inspection System
+
+Puzzle Trigger Framework
+
+Scripted Event System
+
+Audio Manager
+
+Lighting Controller
+
+Scene State Manager
+
+Everything else depends on this layer.
+
+Stage 2 — Environment & Atmosphere
+
+Modular room construction
+
+Lighting design
+
+Volumetric fog
+
+Post-processing stack
+
+Soundscape layering
+
+Ambient audio zones
+
+Environmental storytelling props
+
+Stage 3 — Dynamic Space Transformation
+
+Object state swapping
+
+Room configuration shifts
+
+Material transitions
+
+Environmental corruption system
+
+Timeline-based events
+
+Scene morph logic
+
+This is the psychological core.
+
+Stage 4 — Puzzle Design & Integration
+
+Multi-step puzzles
+
+Inventory-based puzzles
+
+Environmental manipulation puzzles
+
+Light/shadow-based puzzles
+
+Audio-based puzzles
+
+Perception puzzles
+
+Each location introduces one new mechanic.
+
+Stage 5 — Polish & Thesis Documentation
+
+Performance optimization
+
+Bug fixing
+
+UX refinement
+
+Documentation of:
+
+Technical architecture
+
+Design decisions
+
+Development phases
+
+Challenges and solutions
+
+4) Core Architecture
+
+Engine:
+Unity 3D
+
+Language:
+C#
+
+Architecture Principles:
+
+Modular systems
+
+Event-driven communication
+
+State-based progression
+
+Decoupled puzzle logic
+
+ScriptableObjects for data
+
+5) Game Structure
+Game
+ ├── Location_1
+ ├── Location_2
+ ├── Location_3
+ ├── Location_4
+ ├── Location_5
+
+
+Each Location:
+
+Introduces new mechanic
+
+Has unique visual identity
+
+Contains 1–3 puzzles
+
+Contains 1 scripted environmental shift
+
+Advances narrative
+
+6) Core Systems Specification
+6.1 First Person Controller
+
+Features:
+
+Smooth movement
+
+Camera sway
+
+Subtle breathing effect
+
+Head bob
+
+Footstep audio variation
+
+Dynamic FOV shifts during stress
+
+Optional psychological enhancements:
+
+Slight camera drift
+
+Occasional micro input delay
+
+Subtle aim instability
+
+6.2 Interaction System
+
+Raycast-based.
+
+All interactables implement:
+
+IInteractable
+
+
+Interaction types:
+
+Pickup
+
+Inspect
+
+Activate
+
+Use on object
+
+Trigger event
+
+Must support:
+
+Context-sensitive prompts
+
+Interaction lock during events
+
+Narrative triggers
+
+6.3 Inventory System
+
+Simple but immersive:
+
+Grid-based or minimal list
+
+Inspect mode (rotate object in 3D)
+
+Combine items
+
+Use item on environment
+
+Trigger puzzle states
+
+6.4 Puzzle Framework
+
+Every puzzle:
+
+Has state machine
+
+Emits completion event
+
+Can trigger environment changes
+
+Can lock progression
+
+Puzzle structure:
+
+Puzzle
+ ├── Conditions
+ ├── Progress State
+ ├── Completion Event
+ ├── Failure Feedback
+
+6.5 Scripted Event System
+
+Core psychological system.
+
+Types:
+
+Object appearance/disappearance
+
+Sound trigger
+
+Lighting flicker
+
+Shadow movement
+
+Environmental rearrangement
+
+Hallway extension illusion
+
+Door relocation
+
+Subtle geometry change
+
+Trigger methods:
+
+Enter area
+
+Solve puzzle
+
+Pick up object
+
+Look at object
+
+Timer-based
+
+Combination triggers
+
+Must support:
+
+One-time triggers
+
+Conditional triggers
+
+Delayed triggers
+
+6.6 Environment State Manager
+
+Central controller that:
+
+Tracks progression state
+
+Applies environmental variations
+
+Controls which version of room is active
+
+Handles transformation phases
+
+Example:
+
+State 0 → Clean Room
+State 1 → Slightly altered
+State 2 → Distorted
+State 3 → Fully corrupted
+
+6.7 Lighting System
+
+Atmosphere priority.
+
+Use:
+
+Baked + real-time mixed lighting
+
+Light flicker script
+
+Color temperature shifts
+
+Shadow exaggeration
+
+Dynamic intensity transitions
+
+Light as puzzle mechanic
+
+Psychological lighting tools:
+
+Slow intensity pulses
+
+Gradual color shift to colder tones
+
+Selective darkness
+
+Partial light failures
+
+6.8 Audio System
+
+Layered ambient audio:
+
+Base ambient loop
+
+Subtle random distant sounds
+
+Directional audio triggers
+
+Positional whispers
+
+Puzzle feedback audio
+
+Environmental tension ramp
+
+Advanced:
+
+Dynamic low-pass filter when stressed
+
+Volume shifts based on proximity
+
+Silence as tension mechanic
+
+7) Psychological Design Tools
+
+To create unease:
+
+Repetition with variation
+
+Slight spatial inconsistencies
+
+Object repositioning
+
+Subtle geometry distortion
+
+Unreliable environmental memory
+
+Sound before visual confirmation
+
+Slow changes rather than instant ones
+
+Avoid overusing:
+
+Loud jumpscares
+
+Constant noise
+
+Overexposure to horror elements
+
+8) Example Location Progression
+Location 1 — Apartment
+
+Mechanic: Basic interaction + simple inventory puzzle
+Transformation: Minor object movement
+
+Location 2 — Corridor Loop
+
+Mechanic: Space illusion
+Transformation: Corridor extends
+
+Location 3 — Library
+
+Mechanic: Light-based puzzle
+Transformation: Books rearrange silently
+
+Location 4 — Basement
+
+Mechanic: Sound-based puzzle
+Transformation: Walls distort
+
+Location 5 — Final Location
+
+Mechanic: Combined mechanics
+Transformation: Reality fragmentation
+
+9) Technical Folder Structure
+Assets
+ ├── Scripts
+ │    ├── Player
+ │    ├── Interaction
+ │    ├── Puzzle
+ │    ├── Environment
+ │    ├── Audio
+ │    ├── Lighting
+ │    ├── Core
+ │
+ ├── ScriptableObjects
+ ├── Prefabs
+ ├── Materials
+ ├── Scenes
+
+10) State-Driven Design
+
+Central GameStateManager:
+
+Tracks:
+
+Current location
+
+Puzzle progress
+
+Environment phase
+
+Triggered events
+
+Inventory state
+
+Avoid:
+
+Hardcoded scene references
+
+Direct cross-object dependencies
+
+Use:
+
+Events
+
+Interfaces
+
+ScriptableObjects
+
+11) Save System
+
+Must store:
+
+Current location
+
+Puzzle states
+
+Inventory
+
+Environment phase
+
+Triggered events
+
+Use:
+
+JSON serialization
+
+Or Unity persistent data system
+
+12) Performance Considerations
+
+Occlusion culling
+
+Light baking
+
+Audio compression
+
+LOD groups
+
+Avoid excessive real-time shadows
+
+13) Thesis Documentation Structure
+
+You can structure thesis around:
+
+Concept & Design Goals
+
+Psychological Horror Theory
+
+Technical Architecture
+
+Environment Design Process
+
+Puzzle Design Methodology
+
+Implementation of Dynamic Space
+
+Audio-Visual Integration
+
+Development Challenges
+
+Testing & Iteration
+
+Final Evaluation
+
+14) Non-Functional Requirements
+
+60 FPS target
+
+Clean code architecture
+
+Modular scripts
+
+Expandable system
+
+Maintainable structure
+
+Clear separation of systems
+
+15) Deliverable Goal
+
+A complete playable psychological horror puzzle game where:
+
+The environment feels alive
+
+Player actions reshape space
+
+Narrative is delivered through interaction
+
+Atmosphere drives tension
+
+Technical implementation supports thesis-level explanation
