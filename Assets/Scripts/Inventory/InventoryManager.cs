@@ -33,14 +33,8 @@ namespace FracturedEchoes.InventorySystem
         [SerializeField] private ItemData[] _itemDatabase;
 
         [Header("Inspection")]
-        [Tooltip("Transform where inspection objects are spawned.")]
-        [SerializeField] private Transform _inspectionPoint;
-
-        [Tooltip("Camera used for item inspection view.")]
-        [SerializeField] private Camera _inspectionCamera;
-
-        [Tooltip("Rotation speed when inspecting an item.")]
-        [SerializeField] private float _inspectionRotateSpeed = 100f;
+        [Tooltip("Reference to the dedicated inspection controller.")]
+        [SerializeField] private InspectItemController _inspectController;
 
         [Header("Events")]
         [SerializeField] private GameEvent _onInventoryChanged;
@@ -56,9 +50,7 @@ namespace FracturedEchoes.InventorySystem
         // =====================================================================
 
         private List<ItemData> _items = new List<ItemData>();
-        private bool _isInspecting;
-        private GameObject _inspectionObject;
-        private ItemData _inspectedItem;
+        private Camera _mainCamera;
 
         // =====================================================================
         // PROPERTIES
@@ -69,7 +61,7 @@ namespace FracturedEchoes.InventorySystem
         public int SlotCount => _maxSlots;
         public int ItemCount => _items.Count;
         public bool IsFull => _items.Count >= _maxSlots;
-        public bool IsInspecting => _isInspecting;
+        public bool IsInspecting => _inspectController != null && _inspectController.IsInspecting;
 
         // =====================================================================
         // C# EVENTS (for direct subscribers)
@@ -134,8 +126,12 @@ namespace FracturedEchoes.InventorySystem
         /// </summary>
         public bool RemoveItemByID(string itemID)
         {
-            ItemData item = _items.FirstOrDefault(i => i.itemID == itemID);
-            return item != null && RemoveItem(item);
+            for (int i = 0; i < _items.Count; i++)
+            {
+                if (_items[i].itemID == itemID)
+                    return RemoveItem(_items[i]);
+            }
+            return false;
         }
 
         /// <summary>
@@ -143,7 +139,11 @@ namespace FracturedEchoes.InventorySystem
         /// </summary>
         public bool HasItem(string itemID)
         {
-            return _items.Any(i => i.itemID == itemID);
+            for (int i = 0; i < _items.Count; i++)
+            {
+                if (_items[i].itemID == itemID) return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -151,7 +151,11 @@ namespace FracturedEchoes.InventorySystem
         /// </summary>
         public ItemData GetItem(string itemID)
         {
-            return _items.FirstOrDefault(i => i.itemID == itemID);
+            for (int i = 0; i < _items.Count; i++)
+            {
+                if (_items[i].itemID == itemID) return _items[i];
+            }
+            return null;
         }
 
         /// <summary>
@@ -194,81 +198,81 @@ namespace FracturedEchoes.InventorySystem
         }
 
         // =====================================================================
-        // ITEM INSPECTION
+        // ITEM INSPECTION (delegated to InspectItemController)
         // =====================================================================
 
         /// <summary>
-        /// Enters item inspection mode. Spawns the 3D model for rotation.
+        /// Opens the inspection view for the given item.
+        /// Delegates to InspectItemController.
         /// </summary>
         public void StartInspection(ItemData item)
         {
-            if (item == null || item.inspectionPrefab == null) return;
-            if (_inspectionPoint == null) return;
-
-            // End any current inspection
-            EndInspection();
-
-            _inspectedItem = item;
-            _isInspecting = true;
-
-            // Spawn inspection model
-            _inspectionObject = Instantiate(item.inspectionPrefab, _inspectionPoint.position, Quaternion.identity, _inspectionPoint);
-
-            // Enable inspection camera
-            if (_inspectionCamera != null)
+            if (_inspectController == null)
             {
-                _inspectionCamera.gameObject.SetActive(true);
+                Debug.LogWarning("[Inventory] No InspectItemController assigned.");
+                return;
             }
 
-            Debug.Log($"[Inventory] Inspecting: {item.displayName}");
+            _inspectController.StartInspection(item);
         }
 
         /// <summary>
-        /// Ends item inspection mode and cleans up.
+        /// Closes the inspection view.
         /// </summary>
         public void EndInspection()
         {
-            if (_inspectionObject != null)
-            {
-                Destroy(_inspectionObject);
-                _inspectionObject = null;
-            }
-
-            _inspectedItem = null;
-            _isInspecting = false;
-
-            // Disable inspection camera
-            if (_inspectionCamera != null)
-            {
-                _inspectionCamera.gameObject.SetActive(false);
-            }
+            _inspectController?.EndInspection();
         }
 
-        private void Update()
-        {
-            // Handle inspection rotation
-            if (_isInspecting && _inspectionObject != null)
-            {
-                HandleInspectionRotation();
+        // =====================================================================
+        // ITEM USAGE ON WORLD OBJECTS
+        // =====================================================================
 
-                // Exit inspection on right-click or Escape
-                if (Input.GetMouseButtonDown(1) || Input.GetKeyDown(KeyCode.Escape))
+        /// <summary>
+        /// Attempts to use an inventory item on a target that implements IItemReceiver.
+        /// Returns true if the item was accepted and consumed.
+        /// </summary>
+        public bool UseItemOn(ItemData item, IItemReceiver receiver)
+        {
+            if (item == null || receiver == null) return false;
+            if (!receiver.CanReceiveItem(item)) return false;
+
+            bool consumed = receiver.ReceiveItem(item);
+            if (consumed)
+            {
+                RemoveItem(item);
+
+                if (item.useSound != null)
                 {
-                    EndInspection();
+                    if (_mainCamera == null) _mainCamera = Camera.main;
+                    if (_mainCamera != null)
+                        AudioSource.PlayClipAtPoint(item.useSound, _mainCamera.transform.position);
                 }
+
+                Debug.Log($"[Inventory] Used {item.displayName} on target.");
             }
+
+            return consumed;
         }
 
-        private void HandleInspectionRotation()
+        /// <summary>
+        /// Finds the first item matching a required ID from the inventory.
+        /// Useful for auto-detecting if the player has the right item for a receiver.
+        /// </summary>
+        public ItemData FindItemForReceiver(IItemReceiver receiver)
         {
-            if (Input.GetMouseButton(0))
+            if (receiver == null) return null;
+            string requiredID = receiver.RequiredItemID;
+            if (string.IsNullOrEmpty(requiredID))
             {
-                float rotX = Input.GetAxis("Mouse X") * _inspectionRotateSpeed * Time.deltaTime;
-                float rotY = Input.GetAxis("Mouse Y") * _inspectionRotateSpeed * Time.deltaTime;
-
-                _inspectionObject.transform.Rotate(Vector3.up, -rotX, Space.World);
-                _inspectionObject.transform.Rotate(Vector3.right, rotY, Space.World);
+                // Receiver accepts anything — return first usable item
+                for (int i = 0; i < _items.Count; i++)
+                {
+                    if (_items[i].canUseOnEnvironment) return _items[i];
+                }
+                return null;
             }
+            return GetItem(requiredID);
         }
 
         // =====================================================================
@@ -278,7 +282,10 @@ namespace FracturedEchoes.InventorySystem
         public object CaptureState()
         {
             // Save item IDs for serialization
-            return _items.Select(i => i.itemID).ToList();
+            var ids = new List<string>(_items.Count);
+            for (int i = 0; i < _items.Count; i++)
+                ids.Add(_items[i].itemID);
+            return ids;
         }
 
         public void RestoreState(object state)
@@ -288,15 +295,16 @@ namespace FracturedEchoes.InventorySystem
                 _items.Clear();
                 foreach (string id in itemIDs)
                 {
-                    ItemData item = _itemDatabase.FirstOrDefault(i => i.itemID == id);
+                    ItemData item = null;
+                    for (int i = 0; i < _itemDatabase.Length; i++)
+                    {
+                        if (_itemDatabase[i].itemID == id) { item = _itemDatabase[i]; break; }
+                    }
+
                     if (item != null)
-                    {
                         _items.Add(item);
-                    }
                     else
-                    {
                         Debug.LogWarning($"[Inventory] Could not find item with ID: {id} in database.");
-                    }
                 }
 
                 InventoryChanged?.Invoke();

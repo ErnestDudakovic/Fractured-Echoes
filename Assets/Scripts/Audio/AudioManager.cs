@@ -68,6 +68,7 @@ namespace FracturedEchoes.Audio
 
         private Dictionary<string, AudioLayerInstance> _activeLayers = new Dictionary<string, AudioLayerInstance>();
         private AudioLowPassFilter _lowPassFilter;
+        private AudioSource _2dSource;
         private float _randomSoundTimer;
         private bool _isSilenceActive;
         private Coroutine _silenceCoroutine;
@@ -81,6 +82,11 @@ namespace FracturedEchoes.Audio
             // Add low-pass filter for stress effects
             _lowPassFilter = gameObject.AddComponent<AudioLowPassFilter>();
             _lowPassFilter.cutoffFrequency = _normalLowPassCutoff;
+
+            // Dedicated 2D source for UI/narrative sounds
+            _2dSource = gameObject.AddComponent<AudioSource>();
+            _2dSource.spatialBlend = 0f;
+            _2dSource.playOnAwake = false;
 
             // Initialize layers from definitions
             InitializeLayers();
@@ -310,16 +316,7 @@ namespace FracturedEchoes.Audio
         public void PlaySound2D(AudioClip clip, float volume = 1f)
         {
             if (clip == null) return;
-
-            // Use a temporary audio source for 2D sounds
-            AudioSource tempSource = gameObject.AddComponent<AudioSource>();
-            tempSource.spatialBlend = 0f;
-            tempSource.clip = clip;
-            tempSource.volume = volume * _masterVolume;
-            tempSource.Play();
-
-            // Auto-destroy after clip finishes
-            Destroy(tempSource, clip.length + 0.1f);
+            _2dSource.PlayOneShot(clip, volume * _masterVolume);
         }
 
         /// <summary>

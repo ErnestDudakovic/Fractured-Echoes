@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04cac402389f39b40b0895d8b319dcf5, type: 3}
+  m_Name: Phase_Dark
+  m_EditorClassIdentifier: Assembly-CSharp::FracturedEchoes.ScriptableObjects.EnvironmentPhaseData
+  phaseName: Dark
+  phaseIndex: 2
+  ambientColor: {r: 0.05, g: 0.03, b: 0.08, a: 1}
+  ambientIntensity: 0.2
+  fogColor: {r: 0.02, g: 0.01, b: 0.04, a: 1}
+  fogDensity: 0.05
+  ambientLoop: {fileID: 0}
+  ambientVolume: 0.5
+  saturation: 0
+  vignetteIntensity: 0.2
+  chromaticAberration: 0
+  transitionDuration: 8

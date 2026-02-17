@@ -100,12 +100,9 @@ namespace FracturedEchoes.Environment
                 {
                     if (obj != null)
                     {
-                        IEnvironmentPhase[] phases = obj.GetComponents<IEnvironmentPhase>();
+                        // GetComponentsInChildren includes the root object itself
+                        IEnvironmentPhase[] phases = obj.GetComponentsInChildren<IEnvironmentPhase>();
                         _phaseReceivers.AddRange(phases);
-
-                        // Also check children
-                        IEnvironmentPhase[] childPhases = obj.GetComponentsInChildren<IEnvironmentPhase>();
-                        _phaseReceivers.AddRange(childPhases);
                     }
                 }
             }

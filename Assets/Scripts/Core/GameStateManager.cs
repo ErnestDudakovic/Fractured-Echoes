@@ -9,6 +9,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using FracturedEchoes.Core.Events;
 using FracturedEchoes.Core.Interfaces;
 using FracturedEchoes.Core.SaveLoad;
@@ -97,19 +98,20 @@ namespace FracturedEchoes.Core
                 _totalPlayTime += Time.unscaledDeltaTime;
             }
 
-            // Pause toggle
-            if (Input.GetKeyDown(KeyCode.Escape))
-            {
-                TogglePause();
-            }
+            var keyboard = Keyboard.current;
+            if (keyboard == null) return;
 
-            // Quick save / Quick load
-            if (Input.GetKeyDown(KeyCode.F5) && _saveSystem != null)
+            // Quick save / Quick load (local + cloud)
+            if (keyboard.f5Key.wasPressedThisFrame && _saveSystem != null)
             {
                 _saveSystem.SaveToSlot(0);
+
+                // Also save to cloud if available
+                if (CloudSaveManager.Instance != null && CloudSaveManager.Instance.IsReady)
+                    CloudSaveManager.Instance.SaveToCloud(0);
             }
 
-            if (Input.GetKeyDown(KeyCode.F9) && _saveSystem != null)
+            if (keyboard.f9Key.wasPressedThisFrame && _saveSystem != null)
             {
                 _saveSystem.LoadFromSlot(0);
             }

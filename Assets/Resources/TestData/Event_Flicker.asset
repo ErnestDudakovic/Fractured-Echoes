@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d67986ac62ce77449bf52b34cc03a5d1, type: 3}
+  m_Name: Event_Flicker
+  m_EditorClassIdentifier: Assembly-CSharp::FracturedEchoes.ScriptableObjects.ScriptedEventData
+  eventID: flicker_room4
+  editorDescription: Room 4 lights flicker when player enters
+  triggerType: 0
+  triggerDelay: 0
+  oneTimeOnly: 0
+  requiredPhase: -1
+  requiredPuzzle: {fileID: 0}
+  requiredItem: {fileID: 0}
+  eventType: 4
+  effectDuration: 3
+  eventSound: {fileID: 0}
+  soundVolume: 1
+  chainedEventID: 

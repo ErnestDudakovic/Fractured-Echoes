@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fbf2fe3f474b4f4f80799b504b85181, type: 3}
+  m_Name: Puzzle_Levers
+  m_EditorClassIdentifier: Assembly-CSharp::FracturedEchoes.ScriptableObjects.PuzzleData
+  puzzleID: lever_puzzle_01
+  displayName: Three Lever Puzzle
+  hintText: The correct order is engraved somewhere...
+  solutionSequence:
+  - lever_A
+  - lever_C
+  - lever_B
+  resetOnFailure: 1
+  maxAttempts: 0
+  prerequisites: []
+  requiredItems: []
+  onCompletedEvent: {fileID: 11400000, guid: 102f700acf9f2474f9cb3fa3d2e7c11c, type: 2}
+  onFailedEvent: {fileID: 0}
+  rewardItem: {fileID: 0}
+  triggerPhaseIndex: -1
+  correctStepSound: {fileID: 0}
+  incorrectSound: {fileID: 0}
+  completionSound: {fileID: 0}

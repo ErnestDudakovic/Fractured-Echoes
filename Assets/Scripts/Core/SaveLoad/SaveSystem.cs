@@ -81,6 +81,16 @@ namespace FracturedEchoes.Core.SaveLoad
         public event Action<string> SaveError;
 
         // =====================================================================
+        // PENDING LOAD (for loading from Main Menu)
+        // =====================================================================
+
+        /// <summary>
+        /// When set to >= 0, the SaveSystem will load this slot after scene load.
+        /// Set by SaveSlotUI when loading from the main menu.
+        /// </summary>
+        public static int PendingLoadSlot { get; set; } = -1;
+
+        // =====================================================================
         // UNITY LIFECYCLE
         // =====================================================================
 
@@ -92,6 +102,18 @@ namespace FracturedEchoes.Core.SaveLoad
             if (!Directory.Exists(_saveFolderPath))
             {
                 Directory.CreateDirectory(_saveFolderPath);
+            }
+        }
+
+        private void Start()
+        {
+            // If a pending load was queued (from main menu), apply it now
+            if (PendingLoadSlot >= 0)
+            {
+                int slot = PendingLoadSlot;
+                PendingLoadSlot = -1;
+                Debug.Log($"[Save] Applying pending load for slot {slot}");
+                LoadFromSlot(slot);
             }
         }
 
@@ -282,6 +304,41 @@ namespace FracturedEchoes.Core.SaveLoad
         // INTERNAL METHODS
         // =====================================================================
 
+        /// <summary>
+        /// Returns the current save data as a serialized JSON string.
+        /// Useful for cloud save integration (Firebase, etc.).
+        /// </summary>
+        public string GetCurrentSaveDataJson()
+        {
+            SaveData data = CollectSaveData();
+            return JsonUtility.ToJson(data, true);
+        }
+
+        /// <summary>
+        /// Loads save data from a JSON string (e.g. downloaded from cloud).
+        /// </summary>
+        public void LoadFromJson(string json)
+        {
+            if (string.IsNullOrEmpty(json))
+            {
+                Debug.LogWarning("[Save] Cannot load from empty JSON.");
+                return;
+            }
+
+            try
+            {
+                SaveData saveData = JsonUtility.FromJson<SaveData>(json);
+                DistributeSaveData(saveData);
+                Debug.Log($"[Save] Loaded from JSON: {saveData.entries.Count} entries");
+                _onLoadCompleted?.Raise();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Save] Failed to load from JSON: {ex.Message}");
+                _onSaveFailed?.Raise();
+            }
+        }
+
         private SaveData CollectSaveData()
         {
             SaveData data = new SaveData
@@ -293,7 +350,8 @@ namespace FracturedEchoes.Core.SaveLoad
             };
 
             // Find all ISaveable components in the scene
-            ISaveable[] saveables = FindObjectsOfType<MonoBehaviour>().OfType<ISaveable>().ToArray();
+            ISaveable[] saveables = FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None)
+                .OfType<ISaveable>().ToArray();
 
             foreach (ISaveable saveable in saveables)
             {
@@ -328,7 +386,8 @@ namespace FracturedEchoes.Core.SaveLoad
             }
 
             // Find all ISaveable components and restore their state
-            ISaveable[] saveables = FindObjectsOfType<MonoBehaviour>().OfType<ISaveable>().ToArray();
+            ISaveable[] saveables = FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None)
+                .OfType<ISaveable>().ToArray();
 
             foreach (ISaveable saveable in saveables)
             {
@@ -355,43 +414,5 @@ namespace FracturedEchoes.Core.SaveLoad
         {
             return Path.Combine(_saveFolderPath, $"save_slot_{slotIndex}{_fileExtension}");
         }
-    }
-
-    // =========================================================================
-    // DATA STRUCTURES
-    // =========================================================================
-
-    /// <summary>
-    /// Root save data container. Serialized to/from JSON.
-    /// </summary>
-    [Serializable]
-    public class SaveData
-    {
-        public string timestamp;
-        public string currentLocation;
-        public float playTime;
-        public List<SaveEntry> entries;
-    }
-
-    /// <summary>
-    /// A single save entry for one ISaveable component.
-    /// </summary>
-    [Serializable]
-    public class SaveEntry
-    {
-        public string saveID;
-        public string stateJson;
-        public string typeName;
-    }
-
-    /// <summary>
-    /// Metadata about a save slot for the UI.
-    /// </summary>
-    public class SaveSlotInfo
-    {
-        public int slotIndex;
-        public string timestamp;
-        public string locationName;
-        public float playTime;
     }
 }

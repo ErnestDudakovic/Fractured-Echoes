@@ -9,6 +9,20 @@ using UnityEngine;
 namespace FracturedEchoes.ScriptableObjects
 {
     /// <summary>
+    /// Categorizes items by their primary function.
+    /// </summary>
+    public enum ItemType
+    {
+        Generic,
+        Key,
+        Note,
+        Tool,
+        Photo,
+        Consumable,
+        QuestItem
+    }
+
+    /// <summary>
     /// Data container for an inventory item.
     /// Each item in the game has one of these assets defining its properties.
     /// </summary>
@@ -18,6 +32,9 @@ namespace FracturedEchoes.ScriptableObjects
         [Header("Identity")]
         [Tooltip("Unique identifier for this item. Must be unique across all items.")]
         public string itemID;
+
+        [Tooltip("Category of this item (Key, Note, Tool, etc.).")]
+        public ItemType itemType = ItemType.Generic;
 
         [Tooltip("Display name shown in the inventory UI.")]
         public string displayName;

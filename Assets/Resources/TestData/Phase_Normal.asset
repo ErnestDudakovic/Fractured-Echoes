@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04cac402389f39b40b0895d8b319dcf5, type: 3}
+  m_Name: Phase_Normal
+  m_EditorClassIdentifier: Assembly-CSharp::FracturedEchoes.ScriptableObjects.EnvironmentPhaseData
+  phaseName: Normal
+  phaseIndex: 0
+  ambientColor: {r: 0.3, g: 0.3, b: 0.35, a: 1}
+  ambientIntensity: 0.8
+  fogColor: {r: 0.15, g: 0.15, b: 0.18, a: 1}
+  fogDensity: 0.01
+  ambientLoop: {fileID: 0}
+  ambientVolume: 0.5
+  saturation: 0
+  vignetteIntensity: 0.2
+  chromaticAberration: 0
+  transitionDuration: 3

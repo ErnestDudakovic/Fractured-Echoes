@@ -53,6 +53,7 @@ namespace FracturedEchoes.Lighting
         private Dictionary<string, LightProfile> _lightLookup = new Dictionary<string, LightProfile>();
         private Dictionary<Light, Coroutine> _activeFlickers = new Dictionary<Light, Coroutine>();
         private Dictionary<Light, Coroutine> _activePulses = new Dictionary<Light, Coroutine>();
+        private float _lastAppliedTempShift = float.MinValue;
 
         // =====================================================================
         // UNITY LIFECYCLE
@@ -92,6 +93,10 @@ namespace FracturedEchoes.Lighting
 
         private void ApplyGlobalSettings()
         {
+            // Skip if temperature hasn't changed
+            if (Mathf.Approximately(_temperatureShift, _lastAppliedTempShift)) return;
+            _lastAppliedTempShift = _temperatureShift;
+
             // Apply temperature shift to all lights
             if (Mathf.Abs(_temperatureShift) > 0.01f)
             {
@@ -99,12 +104,20 @@ namespace FracturedEchoes.Lighting
                 {
                     if (profile.light == null || profile.isFlickering) continue;
 
-                    // Shift color temperature (cool = blue tint, warm = orange tint)
                     Color tempColor = _temperatureShift > 0
                         ? Color.Lerp(profile.originalColor, new Color(1f, 0.85f, 0.7f), _temperatureShift)
                         : Color.Lerp(profile.originalColor, new Color(0.7f, 0.85f, 1f), -_temperatureShift);
 
                     profile.light.color = tempColor;
+                }
+            }
+            else
+            {
+                // Reset all to original color when shift is ~0
+                foreach (var profile in _lightProfiles)
+                {
+                    if (profile.light != null && !profile.isFlickering)
+                        profile.light.color = profile.originalColor;
                 }
             }
         }

@@ -79,3 +79,24 @@ crashlytics-build.properties
 
 # JetBrains Rider
 .idea/
+
+# Firebase credentials — NEVER commit
+Assets/google-services.json
+Assets/google-services.json.meta
+Assets/GoogleService-Info.plist
+Assets/GoogleService-Info.plist.meta
+
+# Firebase plugin binaries >100MB (GitHub limit)
+Assets/Firebase/Plugins/**/FirebaseCppApp-*.bundle
+Assets/Firebase/Plugins/**/FirebaseCppApp-*.so
+
+# OS junk
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# VS Code
+.vscode/
+
+# GitHub Copilot
+.github/copilot*

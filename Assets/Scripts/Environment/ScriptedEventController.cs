@@ -38,6 +38,9 @@ namespace FracturedEchoes.Environment
 
         private HashSet<string> _triggeredEvents = new HashSet<string>();
         private Dictionary<string, ScriptedEventInstance> _eventLookup;
+        private EnvironmentStateManager _cachedEnvManager;
+        private InventorySystem.InventoryManager _cachedInventory;
+        private Player.FirstPersonController _cachedPlayer;
 
         // =====================================================================
         // PROPERTIES
@@ -63,6 +66,11 @@ namespace FracturedEchoes.Environment
                     }
                 }
             }
+
+            // Cache scene-wide references
+            _cachedEnvManager = FindFirstObjectByType<EnvironmentStateManager>();
+            _cachedInventory = FindFirstObjectByType<InventorySystem.InventoryManager>();
+            _cachedPlayer = FindFirstObjectByType<Player.FirstPersonController>();
         }
 
         // =====================================================================
@@ -167,7 +175,60 @@ namespace FracturedEchoes.Environment
                 evt.audioSource.PlayOneShot(evt.eventData.eventSound, evt.eventData.soundVolume);
             }
 
-            // Execute based on event type
+            // -----------------------------------------------------------
+            // Check for an EventAction component on the target object.
+            // If one exists, delegate execution to it instead of the
+            // built-in switch, allowing fully custom behaviour.
+            // -----------------------------------------------------------
+            EventAction customAction = null;
+            if (evt.targetObject != null)
+            {
+                customAction = evt.targetObject.GetComponent<EventAction>();
+            }
+
+            if (customAction != null)
+            {
+                StartCoroutine(RunCustomAction(customAction, evt));
+            }
+            else
+            {
+                // Fallback: built-in switch-based execution
+                ExecuteBuiltIn(evt);
+
+                // Trigger chained event (immediate — built-in actions start
+                // their own coroutines but return instantly)
+                TriggerChainedEvent(evt.eventData);
+            }
+
+            Debug.Log($"[ScriptedEvent] Executed: {eventID} ({evt.eventData.eventType})");
+        }
+
+        /// <summary>
+        /// Runs a custom <see cref="EventAction"/> and triggers the chained
+        /// event after the action coroutine completes.
+        /// </summary>
+        private IEnumerator RunCustomAction(EventAction action, ScriptedEventInstance evt)
+        {
+            yield return action.Execute(evt.eventData.effectDuration);
+            TriggerChainedEvent(evt.eventData);
+        }
+
+        /// <summary>
+        /// If the event data specifies a chained event, trigger it.
+        /// </summary>
+        private void TriggerChainedEvent(ScriptedEventData data)
+        {
+            if (!string.IsNullOrEmpty(data.chainedEventID))
+            {
+                TriggerByID(data.chainedEventID);
+            }
+        }
+
+        /// <summary>
+        /// Built-in switch-based execution (original behaviour).
+        /// </summary>
+        private void ExecuteBuiltIn(ScriptedEventInstance evt)
+        {
             switch (evt.eventData.eventType)
             {
                 case ScriptedEventType.ObjectAppear:
@@ -218,8 +279,6 @@ namespace FracturedEchoes.Environment
                     ExecuteCameraDistortion(evt);
                     break;
             }
-
-            Debug.Log($"[ScriptedEvent] Executed: {eventID} ({evt.eventData.eventType})");
         }
 
         // =====================================================================
@@ -322,12 +381,10 @@ namespace FracturedEchoes.Environment
 
         private void ExecuteCameraDistortion(ScriptedEventInstance evt)
         {
-            // Camera effects are handled via player controller stress system
-            Player.FirstPersonController player = FindObjectOfType<Player.FirstPersonController>();
-            if (player != null)
+            if (_cachedPlayer != null)
             {
-                player.SetPsychologicalEffects(true, true, true);
-                StartCoroutine(ResetCameraEffects(player, evt.eventData.effectDuration));
+                _cachedPlayer.SetPsychologicalEffects(true, true, true);
+                StartCoroutine(ResetCameraEffects(_cachedPlayer, evt.eventData.effectDuration));
             }
         }
 
@@ -452,8 +509,7 @@ namespace FracturedEchoes.Environment
             // Check required phase
             if (data.requiredPhase >= 0)
             {
-                EnvironmentStateManager envManager = FindObjectOfType<EnvironmentStateManager>();
-                if (envManager != null && envManager.CurrentPhase != data.requiredPhase)
+                if (_cachedEnvManager != null && _cachedEnvManager.CurrentPhase != data.requiredPhase)
                 {
                     return false;
                 }
@@ -462,7 +518,7 @@ namespace FracturedEchoes.Environment
             // Check required puzzle completion
             if (data.requiredPuzzle != null)
             {
-                Puzzle.PuzzleController[] puzzles = FindObjectsOfType<Puzzle.PuzzleController>();
+                Puzzle.PuzzleController[] puzzles = FindObjectsByType<Puzzle.PuzzleController>(FindObjectsSortMode.None);
                 bool puzzleSolved = false;
                 foreach (var puzzle in puzzles)
                 {
@@ -479,8 +535,7 @@ namespace FracturedEchoes.Environment
             // Check required item
             if (data.requiredItem != null)
             {
-                InventorySystem.InventoryManager inventory = FindObjectOfType<InventorySystem.InventoryManager>();
-                if (inventory == null || !inventory.HasItem(data.requiredItem.itemID))
+                if (_cachedInventory == null || !_cachedInventory.HasItem(data.requiredItem.itemID))
                 {
                     return false;
                 }

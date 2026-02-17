@@ -76,7 +76,7 @@ namespace FracturedEchoes.Environment
             if (_phaseMaterials == null || _renderer == null) return;
             if (phaseIndex < _phaseMaterials.Length && _phaseMaterials[phaseIndex] != null)
             {
-                _renderer.material = _phaseMaterials[phaseIndex];
+                _renderer.sharedMaterial = _phaseMaterials[phaseIndex];
             }
         }
     }

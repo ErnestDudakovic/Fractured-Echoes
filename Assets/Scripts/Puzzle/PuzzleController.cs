@@ -54,6 +54,7 @@ namespace FracturedEchoes.Puzzle
         private PuzzleState _currentState = PuzzleState.Locked;
         private int _currentStepIndex;
         private int _attemptCount;
+        private InventorySystem.InventoryManager _cachedInventory;
 
         // =====================================================================
         // C# EVENTS
@@ -250,13 +251,11 @@ namespace FracturedEchoes.Puzzle
         private bool CheckInventoryRequirements()
         {
             if (_puzzleData.requiredItems == null || _puzzleData.requiredItems.Length == 0) return true;
-
-            InventorySystem.InventoryManager inventory = FindObjectOfType<InventorySystem.InventoryManager>();
-            if (inventory == null) return true;
+            if (_cachedInventory == null) return true;
 
             foreach (ItemData item in _puzzleData.requiredItems)
             {
-                if (!inventory.HasItem(item.itemID))
+                if (!_cachedInventory.HasItem(item.itemID))
                 {
                     Debug.Log($"[Puzzle] {PuzzleID}: Missing required item: {item.displayName}");
                     return false;
@@ -327,6 +326,9 @@ namespace FracturedEchoes.Puzzle
             {
                 _audioSource = GetComponent<AudioSource>();
             }
+
+            // Cache inventory reference
+            _cachedInventory = FindFirstObjectByType<InventorySystem.InventoryManager>();
 
             // Auto-generate save ID if not set
             if (string.IsNullOrEmpty(_saveID) && _puzzleData != null)

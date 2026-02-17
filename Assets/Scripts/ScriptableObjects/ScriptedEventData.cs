@@ -58,6 +58,10 @@ namespace FracturedEchoes.ScriptableObjects
         [Tooltip("Volume of the event sound.")]
         [Range(0f, 1f)]
         public float soundVolume = 1f;
+
+        [Header("Chaining")]
+        [Tooltip("ID of another event to trigger immediately after this one completes. Leave empty for no chain.")]
+        public string chainedEventID;
     }
 
     /// <summary>
