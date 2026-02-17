@@ -10,6 +10,7 @@ using UnityEngine.InputSystem;
 using TMPro;
 using FracturedEchoes.InventorySystem;
 using FracturedEchoes.ScriptableObjects;
+using FracturedEchoes.Player;
 
 namespace FracturedEchoes.UI
 {
@@ -46,6 +47,9 @@ namespace FracturedEchoes.UI
         private Button _useButton;
         private Button _inspectButton;
         private Button _dropButton;
+        private Button _quickslotButton;
+        private GameObject _quickslotPanel;
+        private Button[] _quickslotButtons;
         private Transform _slotContainer;
         private GameObject _slotPrefab;
 
@@ -59,6 +63,8 @@ namespace FracturedEchoes.UI
         private Button[] _slotButtons;
         private Image[] _slotIcons;
         private GameObject[] _slotHighlights;
+        private FirstPersonController _playerController;
+        private HotbarUI _hotbar;
 
         // =====================================================================
         // PROPERTIES
@@ -76,6 +82,8 @@ namespace FracturedEchoes.UI
                 _inventory = FindFirstObjectByType<InventoryManager>();
 
             _inventoryAction = InputSystem.actions?.FindAction("Player/Inventory");
+            _playerController = FindFirstObjectByType<FirstPersonController>();
+            _hotbar = FindFirstObjectByType<HotbarUI>();
 
             BuildUI();
             _rootPanel.SetActive(false);
@@ -127,6 +135,9 @@ namespace FracturedEchoes.UI
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
             Time.timeScale = 0f;
+
+            if (_playerController != null)
+                _playerController.SetInputLocked(true);
         }
 
         public void Close()
@@ -138,6 +149,9 @@ namespace FracturedEchoes.UI
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
             Time.timeScale = 1f;
+
+            if (_playerController != null)
+                _playerController.SetInputLocked(false);
         }
 
         // =====================================================================
@@ -209,31 +223,33 @@ namespace FracturedEchoes.UI
                 CreateSlot(i);
             }
 
-            // Detail panel (right side)
+            // Detail panel (right side) — tall enough for name, desc, buttons, quickslot sub-panel
+            float detailH = Mathf.Max(gridH, 500f);
             _detailPanel = CreatePanel(_rootPanel.transform, "DetailPanel",
                 new Vector2(0.7f, 0.5f), new Vector2(0.7f, 0.5f),
                 new Color(0.1f, 0.1f, 0.12f, 0.95f));
             var detailRT = _detailPanel.GetComponent<RectTransform>();
-            detailRT.sizeDelta = new Vector2(320, gridH);
+            detailRT.sizeDelta = new Vector2(320, detailH);
 
-            // Detail: Item name
+            // Detail: Item name — top of panel
             _detailName = CreateText(_detailPanel.transform, "ItemName", "",
                 new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                new Vector2(0, -20), new Vector2(280, 36), 22, Color.white)
+                new Vector2(0, -22), new Vector2(280, 32), 22, Color.white)
                 .GetComponent<TextMeshProUGUI>();
 
-            // Detail: Description
+            // Detail: Description — positioned below the name with clear gap
             _detailDescription = CreateText(_detailPanel.transform, "ItemDesc", "",
                 new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                new Vector2(0, -70), new Vector2(280, 120), 16, new Color(0.7f, 0.7f, 0.7f))
+                new Vector2(0, -90), new Vector2(280, 80), 16, new Color(0.7f, 0.7f, 0.7f))
                 .GetComponent<TextMeshProUGUI>();
             _detailDescription.textWrappingMode = TextWrappingModes.Normal;
             _detailDescription.alignment = TextAlignmentOptions.TopLeft;
+            _detailDescription.overflowMode = TMPro.TextOverflowModes.Ellipsis;
 
-            // Action buttons
-            float btnY = -210f;
-            float btnH = 36f;
-            float btnGap = 8f;
+            // Action buttons — start below the description area
+            float btnY = -150f;
+            float btnH = 34f;
+            float btnGap = 6f;
 
             _useButton = CreateButton(_detailPanel.transform, "UseBtn", "USE",
                 new Vector2(0, btnY), new Vector2(280, btnH),
@@ -252,6 +268,36 @@ namespace FracturedEchoes.UI
                 new Color(0.5f, 0.2f, 0.2f));
             _dropButton.onClick.AddListener(OnDropClicked);
 
+            btnY -= (btnH + btnGap);
+            _quickslotButton = CreateButton(_detailPanel.transform, "QuickslotBtn", "QUICKSLOT",
+                new Vector2(0, btnY), new Vector2(280, btnH),
+                new Color(0.5f, 0.4f, 0.15f));
+            _quickslotButton.onClick.AddListener(OnQuickslotClicked);
+
+            // Quickslot selection sub-panel (hidden by default)
+            // Quickslot selection sub-panel — positioned right below the QUICKSLOT button
+            btnY -= (btnH + btnGap);
+            _quickslotPanel = CreatePanel(_detailPanel.transform, "QuickslotPanel",
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
+                new Color(0.12f, 0.12f, 0.15f, 0.98f));
+            var qpRT = _quickslotPanel.GetComponent<RectTransform>();
+            qpRT.anchoredPosition = new Vector2(0, btnY);
+            int qSlots = _hotbar != null ? _hotbar.SlotCount : 5;
+            float qBtnH = 30f;
+            float qBtnGap = 3f;
+            qpRT.sizeDelta = new Vector2(280, 16 + qSlots * (qBtnH + qBtnGap));
+            _quickslotButtons = new Button[qSlots];
+            for (int q = 0; q < qSlots; q++)
+            {
+                int captured = q;
+                var qBtn = CreateButton(_quickslotPanel.transform, $"QS_{q+1}", $"Slot {q+1}",
+                    new Vector2(0, -8 - q * (qBtnH + qBtnGap)), new Vector2(260, qBtnH),
+                    new Color(0.3f, 0.3f, 0.35f));
+                qBtn.onClick.AddListener(() => OnQuickslotSelected(captured));
+                _quickslotButtons[q] = qBtn;
+            }
+            _quickslotPanel.SetActive(false);
+
             // Close button (top-right corner)
             var closeBtn = CreateButton(_rootPanel.transform, "CloseBtn", "X",
                 new Vector2(0, 0), new Vector2(40, 40),
@@ -264,7 +310,7 @@ namespace FracturedEchoes.UI
 
             // Instructions text
             CreateText(_rootPanel.transform, "Instructions",
-                "Tab — Close  |  Click Slot — Select  |  Use / Inspect / Drop",
+                "Tab — Close  |  Click Slot — Select  |  Quickslot assigns to hotbar",
                 new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
                 new Vector2(0, 30), new Vector2(600, 30), 14, new Color(0.5f, 0.5f, 0.5f));
         }
@@ -361,14 +407,18 @@ namespace FracturedEchoes.UI
 
         private void UpdateDetailPanel()
         {
+            // Hide quickslot panel when selection changes
+            if (_quickslotPanel != null) _quickslotPanel.SetActive(false);
+
             if (_selectedIndex >= 0 && _selectedIndex < _inventory.ItemCount)
             {
                 var item = _inventory.Items[_selectedIndex];
                 _detailName.text = item.displayName;
                 _detailDescription.text = item.description;
-                _useButton.gameObject.SetActive(item.canUseOnEnvironment);
+                _useButton.gameObject.SetActive(item.canUseOnEnvironment || item.itemType == ItemType.Consumable);
                 _inspectButton.gameObject.SetActive(item.inspectionPrefab != null);
                 _dropButton.gameObject.SetActive(true);
+                _quickslotButton.gameObject.SetActive(true);
             }
             else
             {
@@ -377,6 +427,7 @@ namespace FracturedEchoes.UI
                 _useButton.gameObject.SetActive(false);
                 _inspectButton.gameObject.SetActive(false);
                 _dropButton.gameObject.SetActive(false);
+                _quickslotButton.gameObject.SetActive(false);
             }
         }
 
@@ -401,6 +452,23 @@ namespace FracturedEchoes.UI
         {
             if (_selectedIndex < 0 || _selectedIndex >= _inventory.ItemCount) return;
             var item = _inventory.Items[_selectedIndex];
+
+            // Consumable items — use directly from inventory
+            if (item.itemType == ItemType.Consumable)
+            {
+                if (_hotbar != null)
+                {
+                    _hotbar.UseConsumableDirectly(item);
+                }
+                else
+                {
+                    Debug.LogWarning("[InventoryUI] No HotbarUI found — cannot use consumable.");
+                }
+                _selectedIndex = -1;
+                RefreshSlots();
+                return;
+            }
+
             Debug.Log($"[InventoryUI] Use: {item.displayName} (select a target in the world)");
             // Close inventory to let player select a target in the world
             Close();
@@ -422,6 +490,25 @@ namespace FracturedEchoes.UI
             Debug.Log($"[InventoryUI] Dropped: {item.displayName}");
             _selectedIndex = -1;
             RefreshSlots();
+        }
+
+        private void OnQuickslotClicked()
+        {
+            if (_selectedIndex < 0 || _selectedIndex >= _inventory.ItemCount) return;
+            // Toggle the quickslot selection panel
+            bool show = !_quickslotPanel.activeSelf;
+            _quickslotPanel.SetActive(show);
+        }
+
+        private void OnQuickslotSelected(int slotIndex)
+        {
+            if (_selectedIndex < 0 || _selectedIndex >= _inventory.ItemCount) return;
+            if (_hotbar == null) return;
+
+            var item = _inventory.Items[_selectedIndex];
+            _hotbar.AssignItem(slotIndex, item);
+            _quickslotPanel.SetActive(false);
+            Debug.Log($"[InventoryUI] Assigned '{item.displayName}' to quickslot {slotIndex + 1}");
         }
 
         // =====================================================================

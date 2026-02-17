@@ -58,7 +58,7 @@ namespace FracturedEchoes.UI
 
         [Header("Game")]
         [Tooltip("Scene name to load when starting a new game.")]
-        [SerializeField] private string _firstGameScene = "OutdoorsScene";
+        [SerializeField] private string _firstGameScene = "TestRoom";
 
         [Header("Title")]
         [Tooltip("Optional title text (for animation / glow effects later).")]

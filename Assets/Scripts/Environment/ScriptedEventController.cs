@@ -41,6 +41,7 @@ namespace FracturedEchoes.Environment
         private EnvironmentStateManager _cachedEnvManager;
         private InventorySystem.InventoryManager _cachedInventory;
         private Player.FirstPersonController _cachedPlayer;
+        private Player.SanitySystem _cachedSanity;
 
         // =====================================================================
         // PROPERTIES
@@ -71,6 +72,7 @@ namespace FracturedEchoes.Environment
             _cachedEnvManager = FindFirstObjectByType<EnvironmentStateManager>();
             _cachedInventory = FindFirstObjectByType<InventorySystem.InventoryManager>();
             _cachedPlayer = FindFirstObjectByType<Player.FirstPersonController>();
+            _cachedSanity = FindFirstObjectByType<Player.SanitySystem>();
         }
 
         // =====================================================================
@@ -198,6 +200,12 @@ namespace FracturedEchoes.Environment
                 // Trigger chained event (immediate — built-in actions start
                 // their own coroutines but return instantly)
                 TriggerChainedEvent(evt.eventData);
+            }
+
+            // Drain sanity
+            if (evt.eventData.sanityDamage > 0f && _cachedSanity != null)
+            {
+                _cachedSanity.DrainSanity(evt.eventData.sanityDamage);
             }
 
             Debug.Log($"[ScriptedEvent] Executed: {eventID} ({evt.eventData.eventType})");

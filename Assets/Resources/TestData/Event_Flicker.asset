@@ -24,4 +24,5 @@ MonoBehaviour:
   effectDuration: 3
   eventSound: {fileID: 0}
   soundVolume: 1
+  sanityDamage: 5
   chainedEventID: 

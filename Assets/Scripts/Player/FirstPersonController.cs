@@ -79,7 +79,12 @@ namespace FracturedEchoes.Player
 
         private void Update()
         {
-            if (_inputLocked) return;
+            if (_inputLocked)
+            {
+                // Still apply gravity so the player doesn't float
+                _motor.ApplyGravityOnly();
+                return;
+            }
 
             // Tick the two modules — order matters (movement before camera)
             _motor.Tick();

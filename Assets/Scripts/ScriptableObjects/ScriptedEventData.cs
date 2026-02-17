@@ -59,6 +59,10 @@ namespace FracturedEchoes.ScriptableObjects
         [Range(0f, 1f)]
         public float soundVolume = 1f;
 
+        [Header("Sanity")]
+        [Tooltip("Amount of sanity to drain when this event fires (0 = none).")]
+        public float sanityDamage = 0f;
+
         [Header("Chaining")]
         [Tooltip("ID of another event to trigger immediately after this one completes. Leave empty for no chain.")]
         public string chainedEventID;

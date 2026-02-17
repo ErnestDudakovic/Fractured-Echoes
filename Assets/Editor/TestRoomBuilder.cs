@@ -60,6 +60,10 @@ namespace FracturedEchoes.Editor
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
+            try
+            {
+            // Delete old material assets so they get recreated with a valid shader
+            CleanOldMaterials();
             CreateMaterials();
             EnsureFolder(SO_ROOT);
 
@@ -164,6 +168,21 @@ namespace FracturedEchoes.Editor
             // Already built inside BuildPlayer
 
             // =================================================================
+            // ROOM 1: TEST PICKUPS (for hotbar / inventory testing)
+            // =================================================================
+            var pickupFlashlight = BuildPickup(interactables.transform, "Pickup_Flashlight",
+                room1Pos + new Vector3(-2f, 0.7f, 3f), soAssets.flashlightItem, "Flashlight");
+            BuildTable(interactables.transform, room1Pos + new Vector3(-2f, 0, 3f));
+
+            var pickupBattery = BuildPickup(interactables.transform, "Pickup_Battery",
+                room1Pos + new Vector3(2f, 0.7f, -1f), soAssets.batteryItem, "Battery");
+            BuildTable(interactables.transform, room1Pos + new Vector3(2f, 0, -1f));
+
+            var pickupMedicine = BuildPickup(interactables.transform, "Pickup_Medicine",
+                room1Pos + new Vector3(0f, 0.7f, -4f), soAssets.medicineItem, "Sedative Pills");
+            BuildTable(interactables.transform, room1Pos + new Vector3(0f, 0, -4f));
+
+            // =================================================================
             // ROOM 2: INTERACTABLE OBJECTS (pickups, inspectables)
             // =================================================================
             var pickup1 = BuildPickup(interactables.transform, "Pickup_Key",
@@ -220,6 +239,48 @@ namespace FracturedEchoes.Editor
             // =================================================================
             var coreGO = BuildCoreSystems(systems.transform, soAssets);
 
+            // --- Wire ScriptedEventController events ---
+            var sec = coreGO.GetComponent<ScriptedEventController>();
+
+            // Add an AudioSource on the ghost for event sounds
+            var ghostAudio = ghostObj.AddComponent<AudioSource>();
+            ghostAudio.spatialBlend = 1f;
+            ghostAudio.playOnAwake = false;
+
+            // Populate _events array with the two horror events
+            SerializedObject secSO = new SerializedObject(sec);
+            var eventsArr = secSO.FindProperty("_events");
+            eventsArr.arraySize = 2;
+
+            // Event 0: Ghost appear
+            var evt0 = eventsArr.GetArrayElementAtIndex(0);
+            evt0.FindPropertyRelative("eventData").objectReferenceValue = soAssets.appearEvent;
+            evt0.FindPropertyRelative("targetObject").objectReferenceValue = ghostObj;
+            evt0.FindPropertyRelative("audioSource").objectReferenceValue = ghostAudio;
+
+            // Event 1: Flicker
+            var evt1 = eventsArr.GetArrayElementAtIndex(1);
+            evt1.FindPropertyRelative("eventData").objectReferenceValue = soAssets.flickerEvent;
+            evt1.FindPropertyRelative("targetLight").objectReferenceValue = flickerLight;
+
+            secSO.ApplyModifiedPropertiesWithoutUndo();
+
+            // --- Wire EventTriggerZone to controller ---
+            var triggerZone = GameObject.Find("TriggerZone_Room4");
+            if (triggerZone != null)
+            {
+                var zone = triggerZone.GetComponent<EventTriggerZone>();
+                SerializedObject zoneSO = new SerializedObject(zone);
+                zoneSO.FindProperty("_eventController").objectReferenceValue = sec;
+                zoneSO.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            // =================================================================
+            // ROOM 1: SANITY TEST TRIGGER (walk-through zone drains sanity)
+            // =================================================================
+            BuildSanityTestZone(events.transform, room1Pos + new Vector3(0, WALL_HEIGHT / 2f, 2f),
+                coreGO);
+
             // =================================================================
             // AUDIO
             // =================================================================
@@ -245,13 +306,33 @@ namespace FracturedEchoes.Editor
             // =================================================================
             // SAVE & REGISTER SCENE
             // =================================================================
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[TestRoomBuilder] Error during scene build (scene will still be saved): {ex.Message}\n{ex.StackTrace}");
+            }
+
+            SaveAndRegisterScene(scene);
+        }
+
+        private static void SaveAndRegisterScene(UnityEngine.SceneManagement.Scene scene)
+        {
             string scenePath = "Assets/Scenes/Testing/TestRoom.unity";
             EnsureFolder("Assets/Scenes/Testing");
-            EditorSceneManager.SaveScene(scene, scenePath);
+
+            try
+            {
+                EditorSceneManager.SaveScene(scene, scenePath);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[TestRoomBuilder] Failed to save scene: {e.Message}");
+                // Force-save even if something is wrong
+                EditorSceneManager.SaveScene(scene, scenePath);
+            }
+
             AssetDatabase.Refresh();
-
             AddSceneToBuildSettings(scenePath);
-
             Debug.Log("[TestRoomBuilder] Test scene built and saved to " + scenePath);
         }
 
@@ -261,7 +342,7 @@ namespace FracturedEchoes.Editor
 
         private struct SOAssets
         {
-            public ItemData keyItem, noteItem, photoItem;
+            public ItemData keyItem, noteItem, photoItem, flashlightItem, batteryItem, medicineItem;
             public PuzzleData leverPuzzleData;
             public EnvironmentPhaseData phaseNormal, phaseUnsettling, phaseDark;
             public GameEvent onPuzzleSolved, onPhaseChanged, onGenericInteract;
@@ -304,6 +385,27 @@ namespace FracturedEchoes.Editor
             a.photoItem.description = "A faded photograph. Some faces are scratched out.";
             a.photoItem.itemType = ItemType.Photo;
             EditorUtility.SetDirty(a.photoItem);
+
+            a.flashlightItem = GetOrCreateSO<ItemData>("Item_Flashlight");
+            a.flashlightItem.itemID = "flashlight_01";
+            a.flashlightItem.displayName = "Flashlight";
+            a.flashlightItem.description = "A small LED flashlight. The beam flickers occasionally.";
+            a.flashlightItem.itemType = ItemType.Tool;
+            EditorUtility.SetDirty(a.flashlightItem);
+
+            a.batteryItem = GetOrCreateSO<ItemData>("Item_Battery");
+            a.batteryItem.itemID = "battery_01";
+            a.batteryItem.displayName = "Battery";
+            a.batteryItem.description = "A half-charged AA battery.";
+            a.batteryItem.itemType = ItemType.Consumable;
+            EditorUtility.SetDirty(a.batteryItem);
+
+            a.medicineItem = GetOrCreateSO<ItemData>("Item_Medicine");
+            a.medicineItem.itemID = "medicine_01";
+            a.medicineItem.displayName = "Sedative Pills";
+            a.medicineItem.description = "A small bottle of sedatives. Might calm the nerves.";
+            a.medicineItem.itemType = ItemType.Consumable;
+            EditorUtility.SetDirty(a.medicineItem);
 
             // --- Puzzle ---
             a.leverPuzzleData = GetOrCreateSO<PuzzleData>("Puzzle_Levers");
@@ -355,6 +457,7 @@ namespace FracturedEchoes.Editor
             a.flickerEvent.eventType = ScriptedEventType.LightFlicker;
             a.flickerEvent.effectDuration = 3f;
             a.flickerEvent.oneTimeOnly = false;
+            a.flickerEvent.sanityDamage = 5f;
             EditorUtility.SetDirty(a.flickerEvent);
 
             a.appearEvent = GetOrCreateSO<ScriptedEventData>("Event_GhostAppear");
@@ -365,6 +468,7 @@ namespace FracturedEchoes.Editor
             a.appearEvent.effectDuration = 2f;
             a.appearEvent.oneTimeOnly = true;
             a.appearEvent.chainedEventID = "flicker_room4";
+            a.appearEvent.sanityDamage = 20f;
             EditorUtility.SetDirty(a.appearEvent);
 
             AssetDatabase.SaveAssets();
@@ -434,11 +538,22 @@ namespace FracturedEchoes.Editor
             // InventoryUI (self-building grid interface)
             player.AddComponent<InventoryUI>();
 
+            // SanitySystem (horror-driven health-like bar)
+            player.AddComponent<SanitySystem>();
+
+            // HotbarUI (bottom-of-screen item slots)
+            player.AddComponent<HotbarUI>();
+
+            // SanityBarUI (bottom-left sanity bar)
+            player.AddComponent<SanityBarUI>();
+
             // InteractionSystem
             var interSys = player.AddComponent<InteractionSystem>();
             SerializedObject interSO = new SerializedObject(interSys);
             interSO.FindProperty("_cameraTransform").objectReferenceValue = camGo.transform;
             interSO.FindProperty("_interactionRange").floatValue = 3f;
+            var layerProp = interSO.FindProperty("_interactableLayer");
+            layerProp.intValue = ~0;  // Everything
             interSO.ApplyModifiedPropertiesWithoutUndo();
 
             return player;
@@ -1149,6 +1264,38 @@ namespace FracturedEchoes.Editor
         }
 
         // =====================================================================
+        // SANITY TEST ZONE
+        // =====================================================================
+
+        private static void BuildSanityTestZone(Transform parent, Vector3 position, GameObject coreSystemsGO)
+        {
+            // Visual indicator — a red-tinted floor area
+            var visual = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            visual.name = "SanityTestZone_Visual";
+            visual.transform.SetParent(parent, false);
+            visual.transform.position = position - new Vector3(0, WALL_HEIGHT / 2f - 0.02f, 0);
+            visual.transform.localScale = new Vector3(2f, 0.04f, 2f);
+            visual.GetComponent<Renderer>().sharedMaterial = MakeMat("TestSanityZone",
+                new Color(0.6f, 0.1f, 0.1f));
+            Object.DestroyImmediate(visual.GetComponent<Collider>());
+
+            // Trigger zone
+            var triggerGO = new GameObject("SanityTestZone");
+            triggerGO.transform.SetParent(parent, false);
+            triggerGO.transform.position = position;
+            var col = triggerGO.AddComponent<BoxCollider>();
+            col.isTrigger = true;
+            col.size = new Vector3(2f, WALL_HEIGHT, 2f);
+
+            // Add a SanityDrainZone component
+            triggerGO.AddComponent<SanityDrainZone>();
+
+            // Label
+            BuildFloatingLabel(parent, "SanityTestLabel",
+                position + new Vector3(0, 1.5f, -1.2f), "<color=#FF4444>Sanity Drain Zone</color>");
+        }
+
+        // =====================================================================
         // LIGHTING
         // =====================================================================
 
@@ -1248,7 +1395,7 @@ namespace FracturedEchoes.Editor
             rt.anchorMax = new Vector2(0, 1);
             rt.pivot = new Vector2(0, 1);
             rt.anchoredPosition = new Vector2(15, -15);
-            rt.sizeDelta = new Vector2(500, 220);
+            rt.sizeDelta = new Vector2(500, 300);
 
             var tmp = helpGo.AddComponent<TextMeshProUGUI>();
             tmp.fontSize = 16;
@@ -1259,46 +1406,124 @@ namespace FracturedEchoes.Editor
                 "WASD — Move | Shift — Sprint | C — Crouch\n" +
                 "Mouse — Look | E — Interact\n" +
                 "Tab/I — Inventory | Esc — Pause Menu\n" +
+                "<color=#FFD966>1-5 — Select Hotbar | x2 — Use Item</color>\n" +
                 "Scroll — Zoom (Inspect)\n\n" +
                 "<b>Rooms:</b>\n" +
-                "1 (Start) — Movement, head bob, <color=#5599FF>Save Station</color>\n" +
+                "1 (Start) — Movement, pickups, <color=#5599FF>Save Station</color>,\n" +
+                "    <color=#FF6666>Sanity Drain Zone</color> (red floor)\n" +
                 "2 (Right) — Pickups, locked door, inventory\n" +
                 "3 (Behind) — 3-lever puzzle (order: A→C→B)\n" +
-                "4 (Diagonal) — Horror: flicker, ghost, phases\n\n" +
-                "<b>Quick:</b> F5 Save | F9 Load";
+                "4 (Diagonal) — Horror: flicker, ghost, <color=#FF6666>sanity drain</color>\n\n" +
+                "<b>Quick:</b> F5 Save | F9 Load\n" +
+                "<b>Tip:</b> Pick up pills → Quickslot → Use when sanity drops";
         }
 
         // =====================================================================
         // MATERIALS
         // =====================================================================
 
-        private static void CreateMaterials()
+        private static void CleanOldMaterials()
         {
-            // Use Lit shader for HDRP, fallback to Standard
-            string shaderName = Shader.Find("HDRP/Lit") != null ? "HDRP/Lit" : "Standard";
-
-            _floorMat = MakeMat("TestFloor", shaderName, new Color(0.15f, 0.15f, 0.18f));
-            _wallMat = MakeMat("TestWall", shaderName, new Color(0.25f, 0.24f, 0.26f));
-            _ceilingMat = MakeMat("TestCeiling", shaderName, new Color(0.1f, 0.1f, 0.12f));
-            _accentMat = MakeMat("TestAccent", shaderName, new Color(0.35f, 0.28f, 0.22f));
-            _darkMat = MakeMat("TestDark", shaderName, new Color(0.03f, 0.03f, 0.04f));
-            _interactMat = MakeMat("TestInteract", shaderName, new Color(0.4f, 0.55f, 0.35f));
-            _puzzleMat = MakeMat("TestPuzzle", shaderName, new Color(0.5f, 0.35f, 0.25f));
+            string[] matNames = { "TestFloor", "TestWall", "TestCeiling", "TestAccent",
+                                  "TestDark", "TestInteract", "TestPuzzle", "TestSanityZone" };
+            foreach (var n in matNames)
+            {
+                string p = $"Assets/Art/Materials/{n}.mat";
+                if (AssetDatabase.LoadAssetAtPath<Material>(p) != null)
+                {
+                    AssetDatabase.DeleteAsset(p);
+                }
+            }
+            AssetDatabase.Refresh();
         }
 
-        private static Material MakeMat(string name, string shaderName, Color color)
+        private static void CreateMaterials()
+        {
+            _floorMat = MakeMat("TestFloor", new Color(0.15f, 0.15f, 0.18f));
+            _wallMat = MakeMat("TestWall", new Color(0.25f, 0.24f, 0.26f));
+            _ceilingMat = MakeMat("TestCeiling", new Color(0.1f, 0.1f, 0.12f));
+            _accentMat = MakeMat("TestAccent", new Color(0.35f, 0.28f, 0.22f));
+            _darkMat = MakeMat("TestDark", new Color(0.03f, 0.03f, 0.04f));
+            _interactMat = MakeMat("TestInteract", new Color(0.4f, 0.55f, 0.35f));
+            _puzzleMat = MakeMat("TestPuzzle", new Color(0.5f, 0.35f, 0.25f));
+        }
+
+        private static Material MakeMat(string name, Color color)
         {
             string path = $"Assets/Art/Materials/{name}.mat";
             EnsureFolder("Assets/Art/Materials");
 
             Material existing = AssetDatabase.LoadAssetAtPath<Material>(path);
-            if (existing != null) return existing;
+            if (existing != null && existing.shader != null) return existing;
 
-            var mat = new Material(Shader.Find(shaderName));
-            mat.color = color;
-            mat.name = name;
-            AssetDatabase.CreateAsset(mat, path);
-            return mat;
+            // Delete broken material if shader was null
+            if (existing != null)
+                AssetDatabase.DeleteAsset(path);
+
+            // Try every possible shader name — HDRP project so try HDRP first
+            string[] candidates = {
+                "HDRP/Lit",
+                "HD Render Pipeline/Lit",
+                "Universal Render Pipeline/Lit",
+                "Standard",
+                "Unlit/Color",
+                "UI/Default",
+                "Sprites/Default",
+                "Hidden/InternalErrorShader"
+            };
+
+            Shader shader = null;
+            foreach (var c in candidates)
+            {
+                shader = Shader.Find(c);
+                if (shader != null)
+                {
+                    Debug.Log($"[TestRoomBuilder] Using shader '{c}' for {name}");
+                    break;
+                }
+            }
+
+            // Nuclear fallback: search the AssetDatabase for ANY shader
+            if (shader == null)
+            {
+                Debug.LogWarning("[TestRoomBuilder] Shader.Find failed for all candidates. Searching AssetDatabase...");
+                string[] guids = AssetDatabase.FindAssets("t:Shader Lit");
+                foreach (var guid in guids)
+                {
+                    shader = AssetDatabase.LoadAssetAtPath<Shader>(AssetDatabase.GUIDToAssetPath(guid));
+                    if (shader != null)
+                    {
+                        Debug.Log($"[TestRoomBuilder] Found shader via AssetDB: {shader.name}");
+                        break;
+                    }
+                }
+            }
+
+            // If still null, create a plain unlit material as last resort
+            if (shader == null)
+            {
+                Debug.LogWarning($"[TestRoomBuilder] No shader found at all for {name}. Trying to find ANY shader...");
+                // Search for literally any shader in the project
+                string[] allGuids = AssetDatabase.FindAssets("t:Shader");
+                foreach (var guid in allGuids)
+                {
+                    shader = AssetDatabase.LoadAssetAtPath<Shader>(AssetDatabase.GUIDToAssetPath(guid));
+                    if (shader != null) break;
+                }
+            }
+
+            // If even that fails, return a blank material (will be pink but won't crash)
+            if (shader == null)
+            {
+                Debug.LogError($"[TestRoomBuilder] Could not find ANY shader. Material '{name}' will be broken. This should never happen.");
+                return new Material(Shader.Find("Hidden/InternalErrorShader") ?? Shader.Find("UI/Default"));
+            }
+
+            var material = new Material(shader);
+            material.color = color;
+            material.name = name;
+            AssetDatabase.CreateAsset(material, path);
+            return material;
         }
 
         // =====================================================================

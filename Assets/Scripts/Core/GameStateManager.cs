@@ -308,7 +308,8 @@ namespace FracturedEchoes.Core
         Paused,
         Cutscene,
         Loading,
-        GameComplete
+        GameComplete,
+        GameOver
     }
 
     /// <summary>

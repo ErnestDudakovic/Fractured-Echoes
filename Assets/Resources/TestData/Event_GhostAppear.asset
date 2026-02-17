@@ -24,4 +24,5 @@ MonoBehaviour:
   effectDuration: 2
   eventSound: {fileID: 0}
   soundVolume: 1
+  sanityDamage: 20
   chainedEventID: flicker_room4

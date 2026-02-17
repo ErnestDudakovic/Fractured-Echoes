@@ -43,10 +43,10 @@ namespace FracturedEchoes.Player
         [SerializeField] private float _bobFrequency = 1.8f;
 
         [Tooltip("Horizontal bob amplitude.")]
-        [SerializeField] private float _bobAmplitudeX = 0.015f;
+        [SerializeField] private float _bobAmplitudeX = 0.005f;
 
-        [Tooltip("Vertical bob amplitude.")]
-        [SerializeField] private float _bobAmplitudeY = 0.025f;
+        [Tooltip("Vertical bob amplitude (metres).")]
+        [SerializeField] private float _bobAmplitudeY = 0.008f;
 
         [Tooltip("Speed multiplier for bob frequency while sprinting.")]
         [SerializeField] private float _sprintBobMultiplier = 1.5f;

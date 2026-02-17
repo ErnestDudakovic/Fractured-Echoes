@@ -234,6 +234,16 @@ namespace FracturedEchoes.Player
         }
 
         /// <summary>
+        /// Only applies gravity (no horizontal movement). Called when input is locked
+        /// so the player doesn't float or fall through the floor.
+        /// </summary>
+        public void ApplyGravityOnly()
+        {
+            UpdateGroundedState();
+            ApplyGravity();
+        }
+
+        /// <summary>
         /// Enable or disable the micro-delay effect at runtime.
         /// </summary>
         public void SetMicroDelay(bool enabled, float amount = 0.03f)
