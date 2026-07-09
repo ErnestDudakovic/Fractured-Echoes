@@ -244,15 +244,20 @@ namespace FracturedEchoes.UI
 
         private void UseConsumable(ItemData item)
         {
-            if (item.itemID.Contains("medicine") || item.itemID.Contains("pill") ||
-                item.itemID.Contains("sedative"))
+            // Preferred: data-driven sanity restore amount from ItemData
+            float restore = item.sanityRestore;
+
+            // Legacy fallback: ID-based detection for old item assets
+            if (restore <= 0f && (item.itemID.Contains("medicine") ||
+                item.itemID.Contains("pill") || item.itemID.Contains("sedative")))
             {
-                // Restore sanity
-                if (_sanity != null)
-                {
-                    _sanity.RestoreSanity(30f);
-                    Debug.Log($"[Hotbar] Used {item.displayName} — restored 30 sanity");
-                }
+                restore = 30f;
+            }
+
+            if (restore > 0f && _sanity != null)
+            {
+                _sanity.RestoreSanity(restore);
+                Debug.Log($"[Hotbar] Used {item.displayName} — restored {restore:F0} sanity");
             }
             else
             {

@@ -31,6 +31,13 @@ namespace FracturedEchoes.Environment
 
         private bool _hasTriggered;
 
+        private void Awake()
+        {
+            // Auto-find the controller if not wired in the Inspector
+            if (_eventController == null)
+                _eventController = FindFirstObjectByType<ScriptedEventController>();
+        }
+
         private void OnTriggerEnter(Collider other)
         {
             if (_hasTriggered && _oneTimeOnly) return;

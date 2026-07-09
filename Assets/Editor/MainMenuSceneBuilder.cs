@@ -255,7 +255,7 @@ namespace FracturedEchoes.Editor
 
             menuSO.FindProperty("_titleText").objectReferenceValue = titleTMP;
             menuSO.FindProperty("_versionText").objectReferenceValue = versionTMP;
-            menuSO.FindProperty("_firstGameScene").stringValue = "TestRoom";
+            menuSO.FindProperty("_firstGameScene").stringValue = "DemoLevel";
 
             menuSO.ApplyModifiedPropertiesWithoutUndo();
 
@@ -276,7 +276,7 @@ namespace FracturedEchoes.Editor
             slotSO.FindProperty("_slotContainer").objectReferenceValue = slotContainer.transform;
             slotSO.FindProperty("_slotPrefab").objectReferenceValue = slotPrefab;
             slotSO.FindProperty("_saveSystem").objectReferenceValue = menuSaveSystem;
-            slotSO.FindProperty("_gameSceneName").stringValue = "TestRoom";
+            slotSO.FindProperty("_gameSceneName").stringValue = "DemoLevel";
             slotSO.ApplyModifiedPropertiesWithoutUndo();
 
             // =================================================================

@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using FracturedEchoes.Core.Interfaces;
 using FracturedEchoes.Core.Events;
+using FracturedEchoes.Core.SaveLoad;
 using FracturedEchoes.ScriptableObjects;
 
 namespace FracturedEchoes.Environment
@@ -152,6 +153,7 @@ namespace FracturedEchoes.Environment
         /// </summary>
         public void AdvancePhase()
         {
+            if (_phases == null || _phases.Length == 0) return;
             int nextPhase = Mathf.Min(_currentPhase + 1, _phases.Length - 1);
             TransitionToPhase(nextPhase);
         }
@@ -276,16 +278,21 @@ namespace FracturedEchoes.Environment
         // ISaveable IMPLEMENTATION
         // =====================================================================
 
+        // NOTE: primitives must be wrapped — JsonUtility cannot serialize a bare int.
         public object CaptureState()
         {
-            return _currentPhase;
+            return new SaveInt { value = _currentPhase };
         }
 
         public void RestoreState(object state)
         {
-            if (state is int savedPhase)
+            if (state is SaveInt wrapper)
             {
-                ApplyPhaseImmediate(savedPhase);
+                ApplyPhaseImmediate(wrapper.value);
+            }
+            else if (state is int legacyPhase) // pre-wrapper saves
+            {
+                ApplyPhaseImmediate(legacyPhase);
             }
         }
     }

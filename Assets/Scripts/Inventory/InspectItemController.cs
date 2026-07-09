@@ -93,6 +93,7 @@ namespace FracturedEchoes.InventorySystem
 
             _currentItem = item;
             _isInspecting = true;
+            UI.UIFocus.RegisterModalOpen();
 
             // Spawn the 3D model
             _spawnedObject = Instantiate(
@@ -131,6 +132,9 @@ namespace FracturedEchoes.InventorySystem
                 Destroy(_spawnedObject);
                 _spawnedObject = null;
             }
+
+            if (_isInspecting)
+                UI.UIFocus.RegisterModalClosed();
 
             _currentItem = null;
             _isInspecting = false;
@@ -210,6 +214,9 @@ namespace FracturedEchoes.InventorySystem
 
             if (rightClicked || cancelPressed)
             {
+                if (cancelPressed)
+                    UI.UIFocus.ConsumeEscape();
+
                 EndInspection();
             }
         }

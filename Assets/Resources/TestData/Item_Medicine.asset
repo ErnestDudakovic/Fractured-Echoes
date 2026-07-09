@@ -23,5 +23,6 @@ MonoBehaviour:
   canUseOnEnvironment: 0
   combinableWith: []
   combinationResult: {fileID: 0}
+  sanityRestore: 0
   pickupSound: {fileID: 0}
   useSound: {fileID: 0}

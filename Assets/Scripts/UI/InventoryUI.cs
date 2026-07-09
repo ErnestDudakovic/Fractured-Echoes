@@ -107,6 +107,14 @@ namespace FracturedEchoes.UI
 
         private void Update()
         {
+            // Close with Escape while open (consume so pause menu doesn't fire)
+            if (_isOpen && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                UIFocus.ConsumeEscape();
+                Close();
+                return;
+            }
+
             // Toggle with Tab (or Player/Inventory action if bound)
             bool toggle = _inventoryAction?.WasPressedThisFrame() ?? false;
             if (!toggle && Keyboard.current != null && Keyboard.current.tabKey.wasPressedThisFrame)
@@ -115,7 +123,7 @@ namespace FracturedEchoes.UI
             if (toggle)
             {
                 if (_isOpen) Close();
-                else Open();
+                else if (!UIFocus.AnyModalOpen && Time.timeScale > 0f) Open();
             }
         }
 
@@ -128,6 +136,7 @@ namespace FracturedEchoes.UI
             if (_isOpen) return;
             _isOpen = true;
             _rootPanel.SetActive(true);
+            UIFocus.RegisterModalOpen();
             _selectedIndex = -1;
             UpdateDetailPanel();
             RefreshSlots();
@@ -145,6 +154,7 @@ namespace FracturedEchoes.UI
             if (!_isOpen) return;
             _isOpen = false;
             _rootPanel.SetActive(false);
+            UIFocus.RegisterModalClosed();
 
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;

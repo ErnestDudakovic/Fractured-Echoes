@@ -66,6 +66,10 @@ namespace FracturedEchoes.ScriptableObjects
         [Tooltip("The item produced when combining (if applicable).")]
         public ItemData combinationResult;
 
+        [Header("Consumable")]
+        [Tooltip("Sanity restored when this consumable is used (0 = none).")]
+        public float sanityRestore = 0f;
+
         [Header("Audio")]
         [Tooltip("Sound played when picking up this item.")]
         public AudioClip pickupSound;

@@ -40,6 +40,9 @@ namespace FracturedEchoes.UI
         private bool _isOpen;
         private FirstPersonController _cachedPlayer;
 
+        /// <summary>True while the save station panel is open.</summary>
+        public bool IsOpen => _isOpen;
+
         // Colours
         private static readonly Color BG_COLOR = new Color(0.02f, 0.02f, 0.05f, 0.92f);
         private static readonly Color SLOT_BG = new Color(0.08f, 0.08f, 0.12f, 1f);
@@ -65,9 +68,10 @@ namespace FracturedEchoes.UI
         {
             if (!_isOpen) return;
 
-            // Close on Escape
+            // Close on Escape (and consume it so the pause menu doesn't open)
             if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             {
+                UIFocus.ConsumeEscape();
                 Close();
             }
         }
@@ -83,6 +87,7 @@ namespace FracturedEchoes.UI
 
             _isOpen = true;
             _panel.SetActive(true);
+            UIFocus.RegisterModalOpen();
 
             // Pause + unlock cursor
             Time.timeScale = 0f;
@@ -104,6 +109,7 @@ namespace FracturedEchoes.UI
 
             _isOpen = false;
             _panel.SetActive(false);
+            UIFocus.RegisterModalClosed();
 
             // Unpause + relock cursor
             Time.timeScale = 1f;

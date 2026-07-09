@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using FracturedEchoes.Core.Interfaces;
 using FracturedEchoes.Core.Events;
+using FracturedEchoes.ScriptableObjects;
 
 namespace FracturedEchoes.Interaction
 {
@@ -69,6 +70,7 @@ namespace FracturedEchoes.Interaction
         private bool _isLocked;
         private float _cooldownTimer;
         private InputAction _interactAction;
+        private InventorySystem.InventoryManager _cachedInventory;
 
         // =====================================================================
         // PUBLIC PROPERTIES
@@ -96,6 +98,7 @@ namespace FracturedEchoes.Interaction
         private void Awake()
         {
             _interactAction = InputSystem.actions?.FindAction("Player/Interact");
+            _cachedInventory = FindFirstObjectByType<InventorySystem.InventoryManager>();
         }
 
         private void Update()
@@ -106,7 +109,7 @@ namespace FracturedEchoes.Interaction
                 _cooldownTimer -= Time.deltaTime;
             }
 
-            if (_isLocked)
+            if (_isLocked || UI.UIFocus.AnyModalOpen)
             {
                 ClearFocus();
                 return;
@@ -210,9 +213,22 @@ namespace FracturedEchoes.Interaction
         private void HandleInput()
         {
             if (!(_interactAction?.WasPressedThisFrame() ?? false)) return;
+            if (UI.UIFocus.InteractConsumedThisFrame) return;
             if (_currentTarget == null) return;
             if (!_currentTarget.CanInteract) return;
             if (_cooldownTimer > 0f) return;
+
+            // ---------------------------------------------------------------
+            // Item-receiver flow: if the target accepts an inventory item the
+            // player is carrying, consume it (e.g. key → locked door) instead
+            // of running the default interaction.
+            // ---------------------------------------------------------------
+            if (TryUseItemOnTarget())
+            {
+                _onInteraction?.Raise();
+                _cooldownTimer = _currentTarget.InteractionCooldown;
+                return;
+            }
 
             // Execute interaction
             _currentTarget.OnInteract();
@@ -220,6 +236,25 @@ namespace FracturedEchoes.Interaction
 
             // Start cooldown based on the object's setting
             _cooldownTimer = _currentTarget.InteractionCooldown;
+        }
+
+        /// <summary>
+        /// Checks whether the current target implements IItemReceiver and the
+        /// player has a matching item in inventory. If so, uses the item on it.
+        /// Returns true when an item was consumed by the receiver.
+        /// </summary>
+        private bool TryUseItemOnTarget()
+        {
+            if (_currentTargetObject == null || _cachedInventory == null) return false;
+
+            IItemReceiver receiver = _currentTargetObject.GetComponent<IItemReceiver>()
+                                  ?? _currentTargetObject.GetComponentInParent<IItemReceiver>();
+            if (receiver == null) return false;
+
+            ItemData match = _cachedInventory.FindItemForReceiver(receiver);
+            if (match == null || !receiver.CanReceiveItem(match)) return false;
+
+            return _cachedInventory.UseItemOn(match, receiver);
         }
 
         // =====================================================================

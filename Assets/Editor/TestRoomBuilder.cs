@@ -277,8 +277,11 @@ namespace FracturedEchoes.Editor
 
             // =================================================================
             // ROOM 1: SANITY TEST TRIGGER (walk-through zone drains sanity)
+            // Placed in the far corner, away from the spawn point, with gentle
+            // drain values — the old placement was right on the player's path
+            // and could kill a fresh character in seconds.
             // =================================================================
-            BuildSanityTestZone(events.transform, room1Pos + new Vector3(0, WALL_HEIGHT / 2f, 2f),
+            BuildSanityTestZone(events.transform, room1Pos + new Vector3(-4f, WALL_HEIGHT / 2f, 4f),
                 coreGO);
 
             // =================================================================
@@ -1287,8 +1290,12 @@ namespace FracturedEchoes.Editor
             col.isTrigger = true;
             col.size = new Vector3(2f, WALL_HEIGHT, 2f);
 
-            // Add a SanityDrainZone component
-            triggerGO.AddComponent<SanityDrainZone>();
+            // Add a SanityDrainZone component with gentle test values
+            var drainZone = triggerGO.AddComponent<SanityDrainZone>();
+            SerializedObject drainSO = new SerializedObject(drainZone);
+            drainSO.FindProperty("_entryDrain").floatValue = 5f;
+            drainSO.FindProperty("_drainPerSecond").floatValue = 4f;
+            drainSO.ApplyModifiedPropertiesWithoutUndo();
 
             // Label
             BuildFloatingLabel(parent, "SanityTestLabel",

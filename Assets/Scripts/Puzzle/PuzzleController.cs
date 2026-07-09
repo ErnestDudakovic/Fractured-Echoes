@@ -7,6 +7,7 @@
 
 using System;
 using UnityEngine;
+using FracturedEchoes.Core;
 using FracturedEchoes.Core.Interfaces;
 using FracturedEchoes.Core.Events;
 using FracturedEchoes.ScriptableObjects;
@@ -27,6 +28,9 @@ namespace FracturedEchoes.Puzzle
         [Header("Configuration")]
         [Tooltip("The puzzle data asset defining this puzzle's rules.")]
         [SerializeField] private PuzzleData _puzzleData;
+
+        [Tooltip("If true, the puzzle starts in the Available state instead of Locked.")]
+        [SerializeField] private bool _startAvailable = true;
 
         [Header("Events")]
         [Tooltip("Raised when this puzzle is completed (local event).")]
@@ -55,6 +59,9 @@ namespace FracturedEchoes.Puzzle
         private int _currentStepIndex;
         private int _attemptCount;
         private InventorySystem.InventoryManager _cachedInventory;
+        private GameStateManager _cachedGameState;
+        private Environment.EnvironmentStateManager _cachedEnvManager;
+        private Environment.ScriptedEventController _cachedEventController;
 
         // =====================================================================
         // C# EVENTS
@@ -76,6 +83,9 @@ namespace FracturedEchoes.Puzzle
         public string PuzzleID => _puzzleData != null ? _puzzleData.puzzleID : _saveID;
 
         public PuzzleState CurrentState => _currentState;
+
+        /// <summary>Read-only access to the puzzle's configuration data.</summary>
+        public PuzzleData Data => _puzzleData;
 
         /// <summary>
         /// Attempts to advance the puzzle with the given input.
@@ -225,6 +235,24 @@ namespace FracturedEchoes.Puzzle
             _puzzleData.onCompletedEvent?.Raise();
             OnPuzzleCompleted?.Invoke();
 
+            // Register completion with the global game state
+            _cachedGameState?.MarkPuzzleCompleted(PuzzleID);
+
+            // Grant reward item, if configured
+            if (_puzzleData.rewardItem != null && _cachedInventory != null)
+            {
+                _cachedInventory.AddItem(_puzzleData.rewardItem);
+            }
+
+            // Trigger environment phase transition, if configured
+            if (_puzzleData.triggerPhaseIndex >= 0 && _cachedEnvManager != null)
+            {
+                _cachedEnvManager.TransitionToPhase(_puzzleData.triggerPhaseIndex);
+            }
+
+            // Fire SolvePuzzle-triggered scripted events
+            _cachedEventController?.TriggerByType(ScriptableObjects.TriggerType.SolvePuzzle);
+
             Debug.Log($"[Puzzle] {PuzzleID}: COMPLETED!");
         }
 
@@ -241,11 +269,40 @@ namespace FracturedEchoes.Puzzle
 
         private bool CheckPrerequisites()
         {
-            if (_puzzleData.prerequisites == null) return true;
+            if (_puzzleData.prerequisites == null || _puzzleData.prerequisites.Length == 0)
+                return true;
 
-            // This would need a reference to a puzzle manager to check other puzzle states
-            // For now, prerequisites are checked via the PuzzleManager
+            foreach (PuzzleData prereq in _puzzleData.prerequisites)
+            {
+                if (prereq == null) continue;
+
+                if (!IsPuzzleSolved(prereq.puzzleID))
+                {
+                    Debug.Log($"[Puzzle] {PuzzleID}: Prerequisite not met: {prereq.puzzleID}");
+                    return false;
+                }
+            }
+
             return true;
+        }
+
+        /// <summary>
+        /// Checks whether a puzzle with the given ID is completed, using the
+        /// GameStateManager when available and falling back to a scene scan.
+        /// </summary>
+        private bool IsPuzzleSolved(string puzzleID)
+        {
+            if (_cachedGameState != null && _cachedGameState.IsPuzzleCompleted(puzzleID))
+                return true;
+
+            PuzzleController[] puzzles = FindObjectsByType<PuzzleController>(FindObjectsSortMode.None);
+            foreach (var puzzle in puzzles)
+            {
+                if (puzzle.PuzzleID == puzzleID && puzzle.CurrentState == PuzzleState.Completed)
+                    return true;
+            }
+
+            return false;
         }
 
         private bool CheckInventoryRequirements()
@@ -327,13 +384,26 @@ namespace FracturedEchoes.Puzzle
                 _audioSource = GetComponent<AudioSource>();
             }
 
-            // Cache inventory reference
+            // Cache scene-wide references
             _cachedInventory = FindFirstObjectByType<InventorySystem.InventoryManager>();
+            _cachedGameState = FindFirstObjectByType<GameStateManager>();
+            _cachedEnvManager = FindFirstObjectByType<Environment.EnvironmentStateManager>();
+            _cachedEventController = FindFirstObjectByType<Environment.ScriptedEventController>();
 
             // Auto-generate save ID if not set
             if (string.IsNullOrEmpty(_saveID) && _puzzleData != null)
             {
                 _saveID = _puzzleData.puzzleID;
+            }
+        }
+
+        private void Start()
+        {
+            // Puzzles default to Available so they work without extra wiring.
+            // Set _startAvailable to false for puzzles unlocked by other systems.
+            if (_startAvailable && _currentState == PuzzleState.Locked)
+            {
+                SetState(PuzzleState.Available);
             }
         }
     }

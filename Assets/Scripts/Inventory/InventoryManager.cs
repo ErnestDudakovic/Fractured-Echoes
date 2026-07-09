@@ -10,6 +10,7 @@ using System.Linq;
 using UnityEngine;
 using FracturedEchoes.Core.Interfaces;
 using FracturedEchoes.Core.Events;
+using FracturedEchoes.Core.SaveLoad;
 using FracturedEchoes.ScriptableObjects;
 
 namespace FracturedEchoes.InventorySystem
@@ -279,18 +280,25 @@ namespace FracturedEchoes.InventorySystem
         // ISaveable IMPLEMENTATION
         // =====================================================================
 
+        // NOTE: collections must be wrapped — JsonUtility cannot serialize a bare List<string>.
         public object CaptureState()
         {
-            // Save item IDs for serialization
-            var ids = new List<string>(_items.Count);
+            var wrapper = new SaveStringList();
             for (int i = 0; i < _items.Count; i++)
-                ids.Add(_items[i].itemID);
-            return ids;
+                wrapper.values.Add(_items[i].itemID);
+            return wrapper;
         }
 
         public void RestoreState(object state)
         {
-            if (state is List<string> itemIDs && _itemDatabase != null)
+            List<string> itemIDs = state switch
+            {
+                SaveStringList wrapper => wrapper.values,
+                List<string> legacy => legacy, // pre-wrapper saves
+                _ => null
+            };
+
+            if (itemIDs != null && _itemDatabase != null)
             {
                 _items.Clear();
                 foreach (string id in itemIDs)

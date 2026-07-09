@@ -77,6 +77,13 @@ namespace FracturedEchoes.UI
 
             if (keyboard.escapeKey.wasPressedThisFrame)
             {
+                // Another UI (inventory, save station, inspection, game over)
+                // is open or already handled Escape this frame — don't fight it.
+                if (UIFocus.EscapeConsumedThisFrame || UIFocus.AnyModalOpen)
+                {
+                    return;
+                }
+
                 // If confirm dialog is open, close it
                 if (_confirmPanel.activeSelf)
                 {

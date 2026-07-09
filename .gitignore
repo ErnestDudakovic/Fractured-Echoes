@@ -90,6 +90,26 @@ Assets/GoogleService-Info.plist.meta
 Assets/Firebase/Plugins/**/FirebaseCppApp-*.bundle
 Assets/Firebase/Plugins/**/FirebaseCppApp-*.so
 
+# ---------------------------------------------------------------------------
+# Firebase heavy binaries — excluded to keep the repo small enough to push.
+# These are restored by re-importing the Firebase Unity SDK; they don't need
+# to live in version control. iOS/tvOS native libs are useless for a desktop
+# build. If you ever build for those platforms, re-import the SDK locally.
+# ---------------------------------------------------------------------------
+
+# Native static libs for mobile/TV platforms (not needed for desktop)
+Assets/Plugins/iOS/Firebase/
+Assets/Plugins/tvOS/Firebase/
+
+# Firebase desktop/editor native binaries (restored by SDK re-import)
+Assets/Firebase/Plugins/
+Assets/Firebase/m2repository/
+Assets/Firebase/Editor/*.exe
+
+# Compiled Firebase native libs anywhere under Assets
+Assets/Plugins/**/libFirebaseCpp*.a
+Assets/Plugins/**/FirebaseCppApp*.dll
+
 # OS junk
 .DS_Store
 Thumbs.db

@@ -10,6 +10,7 @@ using System;
 using UnityEngine;
 using FracturedEchoes.Core.Interfaces;
 using FracturedEchoes.Core.Events;
+using FracturedEchoes.Core.SaveLoad;
 using FracturedEchoes.UI;
 
 namespace FracturedEchoes.Player
@@ -62,6 +63,7 @@ namespace FracturedEchoes.Player
         private bool _firedLow;
         private bool _firedCritical;
         private FirstPersonController _player;
+        private Audio.AudioManager _audioManager;
 
         // =====================================================================
         // PROPERTIES
@@ -95,15 +97,18 @@ namespace FracturedEchoes.Player
 
         public string SaveID => _saveID;
 
-        public object CaptureState() => _currentSanity;
+        // NOTE: primitives must be wrapped — JsonUtility cannot serialize a bare float.
+        public object CaptureState() => new SaveFloat { value = _currentSanity };
 
         public void RestoreState(object state)
         {
-            if (state is float saved)
-            {
-                _currentSanity = Mathf.Clamp(saved, 0f, _maxSanity);
-                SanityChanged?.Invoke(_currentSanity, _maxSanity);
-            }
+            float saved;
+            if (state is SaveFloat wrapper) saved = wrapper.value;
+            else if (state is float legacy) saved = legacy; // pre-wrapper saves
+            else return;
+
+            _currentSanity = Mathf.Clamp(saved, 0f, _maxSanity);
+            SanityChanged?.Invoke(_currentSanity, _maxSanity);
         }
 
         // =====================================================================
@@ -114,6 +119,7 @@ namespace FracturedEchoes.Player
         {
             _currentSanity = _startingSanity;
             _player = GetComponent<FirstPersonController>();
+            _audioManager = FindFirstObjectByType<Audio.AudioManager>();
 
             // Auto-add GameOverUI if not already present anywhere in the scene
             if (FindFirstObjectByType<GameOverUI>() == null)
@@ -220,6 +226,9 @@ namespace FracturedEchoes.Player
                 float stress = 1f - (_currentSanity / stressOnset);
                 _player.SetStressLevel(stress);
 
+                // Feed tension into the audio system (low-pass muffling)
+                _audioManager?.SetTensionLevel(stress);
+
                 // Enable drift and instability at very low sanity
                 bool severe = _currentSanity < _maxSanity * 0.2f;
                 _player.SetPsychologicalEffects(severe, severe, severe);
@@ -227,6 +236,7 @@ namespace FracturedEchoes.Player
             else
             {
                 _player.SetStressLevel(0f);
+                _audioManager?.SetTensionLevel(0f);
                 _player.SetPsychologicalEffects(false, false, false);
             }
         }

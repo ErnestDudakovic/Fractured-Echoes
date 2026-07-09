@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using FracturedEchoes.Core.Interfaces;
 using FracturedEchoes.Core.Events;
+using FracturedEchoes.Core.SaveLoad;
 using FracturedEchoes.ScriptableObjects;
 
 namespace FracturedEchoes.Environment
@@ -73,6 +74,43 @@ namespace FracturedEchoes.Environment
             _cachedInventory = FindFirstObjectByType<InventorySystem.InventoryManager>();
             _cachedPlayer = FindFirstObjectByType<Player.FirstPersonController>();
             _cachedSanity = FindFirstObjectByType<Player.SanitySystem>();
+        }
+
+        private void OnEnable()
+        {
+            // Drive PickUpObject-triggered events from inventory additions.
+            // Condition checking (requiredItem) filters which events actually fire.
+            if (_cachedInventory != null)
+            {
+                _cachedInventory.ItemAdded += HandleItemAdded;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (_cachedInventory != null)
+            {
+                _cachedInventory.ItemAdded -= HandleItemAdded;
+            }
+        }
+
+        private void Start()
+        {
+            // Kick off Timer-triggered events — their triggerDelay acts as the timer.
+            if (_events == null) return;
+
+            foreach (var evt in _events)
+            {
+                if (evt.eventData != null && evt.eventData.triggerType == TriggerType.Timer)
+                {
+                    TryTriggerEvent(evt);
+                }
+            }
+        }
+
+        private void HandleItemAdded(ItemData item)
+        {
+            TriggerByType(TriggerType.PickUpObject);
         }
 
         // =====================================================================
@@ -556,16 +594,23 @@ namespace FracturedEchoes.Environment
         // ISaveable IMPLEMENTATION
         // =====================================================================
 
+        // NOTE: collections must be wrapped — JsonUtility cannot serialize a bare List<string>.
         public object CaptureState()
         {
-            return new List<string>(_triggeredEvents);
+            var wrapper = new SaveStringList();
+            wrapper.values.AddRange(_triggeredEvents);
+            return wrapper;
         }
 
         public void RestoreState(object state)
         {
-            if (state is List<string> triggeredIDs)
+            if (state is SaveStringList wrapper)
             {
-                _triggeredEvents = new HashSet<string>(triggeredIDs);
+                _triggeredEvents = new HashSet<string>(wrapper.values);
+            }
+            else if (state is List<string> legacy) // pre-wrapper saves
+            {
+                _triggeredEvents = new HashSet<string>(legacy);
             }
         }
     }

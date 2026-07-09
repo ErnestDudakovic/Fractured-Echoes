@@ -158,6 +158,7 @@ namespace FracturedEchoes.UI
 
             _isShowing = true;
             _rootPanel.SetActive(true);
+            UIFocus.RegisterModalOpen();
 
             if (_saveSlotPanel != null)
                 _saveSlotPanel.SetActive(false);
@@ -181,6 +182,9 @@ namespace FracturedEchoes.UI
 
         private void Hide()
         {
+            if (_isShowing)
+                UIFocus.RegisterModalClosed();
+
             _isShowing = false;
             _triggered = false;
             _rootPanel.SetActive(false);

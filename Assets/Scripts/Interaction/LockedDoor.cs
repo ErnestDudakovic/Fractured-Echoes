@@ -64,12 +64,28 @@ namespace FracturedEchoes.Interaction
         private Vector3 _closedPosition;
         private Vector3 _openPosition;
         private AudioSource _audioSource;
+        private InventorySystem.InventoryManager _cachedInventory;
 
         // =====================================================================
         // IInteractable
         // =====================================================================
 
-        public string InteractionPrompt => _isUnlocked ? _unlockedPrompt : _lockedPrompt;
+        public string InteractionPrompt
+        {
+            get
+            {
+                if (_isUnlocked) return _unlockedPrompt;
+
+                // If the player is carrying the required item, show a use hint
+                if (_requiredItem != null && _cachedInventory != null &&
+                    _cachedInventory.HasItem(_requiredItem.itemID))
+                {
+                    return $"Use {_requiredItem.displayName}";
+                }
+
+                return _lockedPrompt;
+            }
+        }
         public InteractionType Type => InteractionType.Activate;
         public bool CanInteract => !_isOpen && !_isOpening;
         public float InteractionCooldown => 0.5f;
@@ -166,6 +182,7 @@ namespace FracturedEchoes.Interaction
         {
             _closedPosition = transform.position;
             _openPosition = _closedPosition + Vector3.up * _openHeight;
+            _cachedInventory = FindFirstObjectByType<InventorySystem.InventoryManager>();
 
             _audioSource = GetComponent<AudioSource>();
             if (_audioSource == null)
