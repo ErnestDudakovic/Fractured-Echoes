@@ -112,3 +112,38 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# ---------------------------------------------------------------------------
+# Asset Store packages - excluded to keep the repo pushable.
+#
+# These are purchased/downloaded packs, not project work. Together they are
+# about 3.6 GB, which GitHub will not accept. They are restored by importing
+# the packages listed in README_SETUP.md; the .meta files ship with each
+# package, so every GUID reference in the scenes reconnects automatically.
+# ---------------------------------------------------------------------------
+
+Assets/Flooded_Grounds/*
+Assets/Flooded_Grounds.meta
+
+# ...except the terrain, which carries the actual level shape and is only 8 MB.
+!Assets/Flooded_Grounds/Scenes/
+Assets/Flooded_Grounds/Scenes/*
+!Assets/Flooded_Grounds/Scenes/Scene_A_Terrain.asset
+!Assets/Flooded_Grounds/Scenes/Scene_A_Terrain.asset.meta
+
+Assets/Enemies/
+Assets/Enemies.meta
+Assets/Standard Assets/
+Assets/Standard Assets.meta
+Assets/Horror Elements/
+Assets/Horror Elements.meta
+Assets/Baseball Bats/
+Assets/Baseball Bats.meta
+Assets/Survival Kit Lite/
+Assets/Survival Kit Lite.meta
+Assets/Horror_Axe/
+Assets/Horror_Axe.meta
+Assets/FPS arms/
+Assets/FPS arms.meta
+Assets/Nokobot/
+Assets/Nokobot.meta

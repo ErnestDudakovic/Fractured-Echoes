@@ -3,7 +3,26 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - Apple
+  - Battery
+  - Knife
+  - Axe
+  - Bat
+  - Gun
+  - Crossbow
+  - CabinKey
+  - HouseKey
+  - RoomKey
+  - Ammo
+  - Arrows
+  - Door
+  - Enemy
+  - Note
+  - PKnife
+  - PBat
+  - PAxe
+  - PCrossbow
   layers:
   - Default
   - TransparentFX

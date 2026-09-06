@@ -4,7 +4,22 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/GameCompany.unity
+    guid: 6f7ff883717d2ca4f8c8983c1973f089
+  - enabled: 1
+    path: Assets/Scenes/Main Menu.unity
+    guid: 77c89b070e0a9fe428912fa1e7d8db7c
+  - enabled: 1
+    path: Assets/Scenes/Opening Cut Scene.unity
+    guid: 38a7cac81fbc67b4caacc2fa59277b6c
+  - enabled: 1
+    path: Assets/Scenes/HorrorScene.unity
+    guid: 9f3278bb19d0d56489213ffccec754f4
+  - enabled: 1
+    path: Assets/Scenes/Game Victory.unity
+    guid: 1814bd9c6bd4fcf41a75e9d07c6060c2
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 289c1b55c9541489481df5cc06664110, type: 3}
   m_UseUCBPForAssetBundles: 0
